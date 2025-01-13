@@ -1,4 +1,5 @@
 from pathlib import Path
+import pathlib
 from typing import Literal, Union
 
 import requests
@@ -46,7 +47,7 @@ def choose_mpd_file(directory: str = "downloads/mpds") -> Union[Path, None]:
     return selected_file
 
 
-def download_file(url: str, output_path: str):
+def download_file(url: str, output_path: str) -> Union[pathlib.Path, None]:
     """Download a file from the given URL and save it to the output path."""
     response = requests.get(url, stream=True)
     if response.status_code == 200:
@@ -54,6 +55,8 @@ def download_file(url: str, output_path: str):
             for chunk in response.iter_content(chunk_size=1024):
                 file.write(chunk)
         logger.info(f"Downloaded: {output_path}")
+
+        return pathlib.Path(output_path)
     else:
         logger.error(f"Failed to download: {url} (Status: {response.status_code})")
 
