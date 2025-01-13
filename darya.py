@@ -229,7 +229,7 @@ class Darya:
     ) -> Union[pathlib.Path, None]:
         if output.exists():
             choice = Prompt.ask(
-                "The output file '{output}' has been created. Do you want to keep it?",
+                f"The output file '{output}' has been created. Do you want to keep it?",
                 choices=["yes", "no"],
                 show_default=True,
                 default="yes",
