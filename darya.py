@@ -1,4 +1,3 @@
-import io
 import os
 import pathlib
 import uuid
@@ -11,9 +10,8 @@ import ffmpeg
 import requests
 from rich.prompt import Prompt
 
-from console import console
 from functions import audio_bitrate2representation as ab2r
-from functions import choose_mpd_file, download_file
+from functions import download_file
 from functions import resolution2representation as r2r
 from logger import logger
 
@@ -145,6 +143,12 @@ class Darya:
             paths.append(pathlib.Path(path))
 
         return paths
+
+    def download_thumbnail(self: Self) -> Union[pathlib.Path, None]:
+        pass
+
+    def download_background(self: Self) -> Union[pathlib.Path, None]:
+        pass
 
     def download_media(
         self: Self,
