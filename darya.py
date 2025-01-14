@@ -28,10 +28,15 @@ install()
 @dataclass
 class Darya:
     item_identity: str
+    resolution: Literal["1920x1080", "1280x720", "854x480", "426x240"] = "1920x1080"
+    audio: Literal["128k", "256k", "320k"] = "128k"
+    output: Union[pathlib.Path, None] = None
 
     def __post_init__(self: Self) -> None:
         self.DOWNLOAD_DIR: str = "downloads"
-        self.ITEM_DIRECTORY: str = f"{self.DOWNLOAD_DIR}/{self.item_identity}"
+        self.ITEM_DIRECTORY: str = (
+            f"{self.DOWNLOAD_DIR}/{self.item_identity}-{self.resolution}"
+        )
         self.ITEM_OUTPUT_DIR: str = f"{self.ITEM_DIRECTORY}/output"
         self.MPDS_OUTPUT_DIR: str = f"{self.ITEM_DIRECTORY}/mpds"
         self.LICENSE_OUTPUT_DIR: str = f"{self.ITEM_DIRECTORY}/license"
@@ -313,19 +318,12 @@ class Darya:
             except Exception as ex:
                 logger.exception(f"An unexpected error occurred: {ex}")
 
-    def download(
-        self: Self,
-        resolution: Literal[
-            "1920x1080", "1280x720", "854x480", "426x240"
-        ] = "1920x1080",
-        audio: Literal["128k", "256k", "320k"] = "128k",
-        output: Union[pathlib.Path, None] = None,
-    ) -> None:
+    def download(self: Self) -> None:
         item = self.item
 
         if item and (item_media := item.get("trailer")):
-            if not output:
-                output = pathlib.Path(
+            if not self.output:
+                self.output = pathlib.Path(
                     f"{self.ITEM_OUTPUT_DIR}/{self.item_identity}.mp4"
                 )
 
@@ -345,13 +343,13 @@ class Darya:
                 media = self.download_media(
                     mpd,
                     f"https://ffprod2.b-cdn.net/c/278/m/{media_identity}.ism/",
-                    resolution,
-                    audio,
+                    self.resolution,
+                    self.audio,
                 )
 
                 if media:
                     video_bytes, audio_bytes = media
-                    self.merge_media(video_bytes, audio_bytes, output)
+                    self.merge_media(video_bytes, audio_bytes, self.output)
         else:
             logger.error(f"Failed to find item with ID: {self.item_identity!r}.")
 
