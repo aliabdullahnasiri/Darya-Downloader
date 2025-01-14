@@ -34,9 +34,7 @@ class Darya:
 
     def __post_init__(self: Self) -> None:
         self.DOWNLOAD_DIR: str = "downloads"
-        self.ITEM_DIRECTORY: str = (
-            f"{self.DOWNLOAD_DIR}/{self.item_identity}-{self.resolution}"
-        )
+        self.ITEM_DIRECTORY: str = f"{self.DOWNLOAD_DIR}/{self.item_identity}"
         self.ITEM_OUTPUT_DIR: str = f"{self.ITEM_DIRECTORY}/output"
         self.MPDS_OUTPUT_DIR: str = f"{self.ITEM_DIRECTORY}/mpds"
         self.LICENSE_OUTPUT_DIR: str = f"{self.ITEM_DIRECTORY}/license"
