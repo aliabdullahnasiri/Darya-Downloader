@@ -1,5 +1,6 @@
 import os
 import pathlib
+import random
 import uuid
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
@@ -7,6 +8,7 @@ from typing import Dict, List, Literal, Self, Tuple, Union
 from urllib.parse import urlparse
 
 import ffmpeg
+import pyfiglet
 import requests
 from rich.emoji import Emoji
 from rich.panel import Panel
@@ -50,6 +52,12 @@ class Darya:
             os.makedirs(self.AUDIO_OUTPUT_DIR, exist_ok=True)
             os.makedirs(self.THUMBNAIL_OUTPUT_DIR, exist_ok=True)
             os.makedirs(self.BG_OUTPUT_DIR, exist_ok=True)
+
+        self.init()
+
+    def init(self: Self) -> None:
+        # Print the tool banner
+        self.banner()
 
     @property
     def item(self: Self) -> Union[Dict, None]:
@@ -367,3 +375,13 @@ class Darya:
             table.add_row(*row)
 
             console.print(table)
+
+    def banner(self: Self) -> None:
+        fonts = pyfiglet.FigletFont.getFonts()
+        font = random.choice(fonts)
+        colors = ["red", "cyan", "green", "white", "yellow"]
+
+        console.print(
+            pyfiglet.figlet_format("Darya Downloader", font=font, width=300),
+            style=f"{random.choice(colors)} bold",
+        )
