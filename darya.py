@@ -38,8 +38,8 @@ class Darya:
         self.ITEM_OUTPUT_DIR: str = f"{self.ITEM_DIRECTORY}/output"
         self.MPDS_OUTPUT_DIR: str = f"{self.ITEM_DIRECTORY}/mpds"
         self.LICENSE_OUTPUT_DIR: str = f"{self.ITEM_DIRECTORY}/license"
-        self.VIDEO_OUTPUT_DIR: str = f"{self.ITEM_DIRECTORY}/video"
-        self.AUDIO_OUTPUT_DIR: str = f"{self.ITEM_DIRECTORY}/audio"
+        self.VIDEO_OUTPUT_DIR: str = f"{self.ITEM_DIRECTORY}/video/{self.resolution}"
+        self.AUDIO_OUTPUT_DIR: str = f"{self.ITEM_DIRECTORY}/audio/{self.audio}"
         self.THUMBNAIL_OUTPUT_DIR: str = f"{self.ITEM_DIRECTORY}/thumbnail"
         self.BG_OUTPUT_DIR: str = f"{self.ITEM_DIRECTORY}/background"
 
@@ -378,6 +378,6 @@ class Darya:
         colors = ["red", "cyan", "green", "white", "yellow"]
 
         console.print(
-            pyfiglet.figlet_format("Darya Downloader", font=font, width=300),
+            pyfiglet.figlet_format("Darya", font=font, width=300),
             style=f"{random.choice(colors)} bold",
         )
