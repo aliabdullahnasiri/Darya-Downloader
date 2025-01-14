@@ -52,14 +52,17 @@ def download_file(url: str, output: pathlib.Path) -> Union[pathlib.Path, None]:
     response = requests.get(url, stream=True)
 
     if size := response.headers.get("content-length"):
-        size = int(size)
+        size = float(size)
 
     if response.status_code == 200:
         with open(output, "wb") as file:
             for chunk in response.iter_content(chunk_size=1024):
                 file.write(chunk)
 
-        logger.info(f"Downloaded: {output} [Length: {size}]")
+        if size:
+            logger.info(f"Downloaded: <b>{output}</b> (<c>{format_size(size)}</c>)")
+        else:
+            logger.info(f"Downloaded: <b>{output}</b>")
 
         return pathlib.Path(output)
     else:
@@ -167,3 +170,26 @@ def audio_bitrate2representation(
     representation = BITRATE_MAP.get(bitrate)
 
     return representation
+
+
+def format_size(size: float) -> str:
+    """
+    Convert a size in bytes to a human-readable format (KB, MB, GB, etc.).
+
+    Args:
+        size (int): The size in bytes.
+
+    Returns:
+        str: The size formatted as a string with appropriate units.
+    """
+    if size == 0:
+        return "0 B"
+
+    units = ["B", "KB", "MB", "GB", "TB", "PB"]
+    index = 0
+
+    while size >= 1024 and index < len(units) - 1:
+        size /= 1024
+        index += 1
+
+    return f"{size:.2f} {units[index]}"
