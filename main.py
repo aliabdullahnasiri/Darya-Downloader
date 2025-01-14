@@ -46,8 +46,8 @@ def download(
     audio: Literal["128k", "256k", "320k"] = "128k",
     output: Union[pathlib.Path, None] = None,
 ) -> None:
-    darya: Darya = Darya(item_id)
-    darya.download(resolution, audio, output)
+    darya: Darya = Darya(item_id, resolution, audio, output)
+    darya.download()
 
 
 if __name__ == "__main__":
