@@ -8,12 +8,19 @@ from urllib.parse import urlparse
 
 import ffmpeg
 import requests
+from rich.emoji import Emoji
+from rich.panel import Panel
 from rich.prompt import Prompt
+from rich.table import Table
+from rich.traceback import install
 
+from console import console
 from functions import audio_bitrate2representation as ab2r
 from functions import download_file
 from functions import resolution2representation as r2r
 from logger import logger
+
+install()
 
 
 @dataclass
@@ -32,23 +39,31 @@ class Darya:
         self.BG_OUTPUT_DIR: str = f"{self.ITEM_DIRECTORY}/background"
 
         os.makedirs(self.DOWNLOAD_DIR, exist_ok=True)
-        os.makedirs(self.ITEM_DIRECTORY, exist_ok=True)
-        os.makedirs(self.ITEM_OUTPUT_DIR, exist_ok=True)
-        os.makedirs(self.ITEM_OUTPUT_DIR, exist_ok=True)
-        os.makedirs(self.MPDS_OUTPUT_DIR, exist_ok=True)
-        os.makedirs(self.LICENSE_OUTPUT_DIR, exist_ok=True)
-        os.makedirs(self.VIDEO_OUTPUT_DIR, exist_ok=True)
-        os.makedirs(self.AUDIO_OUTPUT_DIR, exist_ok=True)
-        os.makedirs(self.THUMBNAIL_OUTPUT_DIR, exist_ok=True)
-        os.makedirs(self.BG_OUTPUT_DIR, exist_ok=True)
 
-    def get_item(self: Self) -> Union[Dict, None]:
+        if self.item:
+            os.makedirs(self.ITEM_DIRECTORY, exist_ok=True)
+            os.makedirs(self.ITEM_OUTPUT_DIR, exist_ok=True)
+            os.makedirs(self.ITEM_OUTPUT_DIR, exist_ok=True)
+            os.makedirs(self.MPDS_OUTPUT_DIR, exist_ok=True)
+            os.makedirs(self.LICENSE_OUTPUT_DIR, exist_ok=True)
+            os.makedirs(self.VIDEO_OUTPUT_DIR, exist_ok=True)
+            os.makedirs(self.AUDIO_OUTPUT_DIR, exist_ok=True)
+            os.makedirs(self.THUMBNAIL_OUTPUT_DIR, exist_ok=True)
+            os.makedirs(self.BG_OUTPUT_DIR, exist_ok=True)
+
+    @property
+    def item(self: Self) -> Union[Dict, None]:
+        if hasattr(self, "_item"):
+            return self._item
+
         response: requests.Response = requests.get(
             f"https://ffprod2s3.b-cdn.net/c/278/catalog/d_35ePcIfifmsHJgZ7G_Yw/item/{self.item_identity}.json"
         )
 
         if response.status_code == 200:
-            return response.json()
+            item = self._item = response.json()
+
+            return item
 
     def get_representations(
         self: Self,
@@ -137,7 +152,7 @@ class Darya:
         paths: List[pathlib.Path] = []
 
         for mpd in mpds:
-            path = f"downloads/mpds/{os.path.basename(mpd)}"
+            path = pathlib.Path(f"downloads/mpds/{os.path.basename(mpd)}")
 
             if not os.path.exists(path):
                 download_file(mpd, path)
@@ -198,7 +213,7 @@ class Darya:
 
             for video_link in video_links:
                 filename = os.path.basename(urlparse(video_link).path)
-                path = f"{self.VIDEO_OUTPUT_DIR}/{filename}"
+                path = pathlib.Path(f"{self.VIDEO_OUTPUT_DIR}/{filename}")
 
                 if not os.path.exists(path):
                     download_file(video_link, path)
@@ -211,7 +226,7 @@ class Darya:
 
             for audio_link in audio_links:
                 filename = os.path.basename(urlparse(audio_link).path)
-                path = f"{self.AUDIO_OUTPUT_DIR}/{filename}"
+                path = pathlib.Path(f"{self.AUDIO_OUTPUT_DIR}/{filename}")
 
                 if not os.path.exists(path):
                     download_file(audio_link, path)
@@ -298,7 +313,7 @@ class Darya:
         audio: Literal["128k", "256k", "320k"] = "128k",
         output: Union[pathlib.Path, None] = None,
     ) -> None:
-        item = self.get_item()
+        item = self.item
 
         if item and (item_media := item.get("trailer")):
             if not output:
@@ -306,11 +321,16 @@ class Darya:
                     f"{self.ITEM_OUTPUT_DIR}/{self.item_identity}.mp4"
                 )
 
+            # call the print method and Print information about item
+            self.print()
+
             media_identity = item.get("trailerID")
             mpds = item_media["mpds"]
             mpd = download_file(
                 link := mpds.pop(0),
-                f"{self.MPDS_OUTPUT_DIR}/{os.path.basename(urlparse(link).path)}",
+                pathlib.Path(
+                    f"{self.MPDS_OUTPUT_DIR}/{os.path.basename(urlparse(link).path)}"
+                ),
             )
 
             if media_identity and mpd:
@@ -326,3 +346,24 @@ class Darya:
                     self.merge_media(video_bytes, audio_bytes, output)
         else:
             logger.error(f"Failed to find item with ID: {self.item_identity!r}.")
+
+    def print(self: Self) -> None:
+        if item := self.item:
+            table: Table = Table(style="cyan bold")
+
+            identity: str = item["id"]
+            title: str = item["title"]["en"]
+            thumbnail: str = item["thumbnail"]
+            background: str = item["background"]
+
+            table.add_column("No")
+            table.add_column("ID", style="green")
+            table.add_column("Title", style="white bold")
+            table.add_column("Thumbnail ID", style="italic underline")
+            table.add_column("Background ID", style="italic underline")
+
+            row: List[str] = ["00", identity, title, thumbnail, background]
+
+            table.add_row(*row)
+
+            console.print(table)
