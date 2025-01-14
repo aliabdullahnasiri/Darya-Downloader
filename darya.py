@@ -25,6 +25,7 @@ class Darya:
         self.ITEM_DIRECTORY: str = f"{self.DOWNLOAD_DIR}/{self.item_identity}"
         self.ITEM_OUTPUT_DIR: str = f"{self.ITEM_DIRECTORY}/output"
         self.MPDS_OUTPUT_DIR: str = f"{self.ITEM_DIRECTORY}/mpds"
+        self.LICENSE_OUTPUT_DIR: str = f"{self.ITEM_DIRECTORY}/license"
         self.VIDEO_OUTPUT_DIR: str = f"{self.ITEM_DIRECTORY}/video"
         self.AUDIO_OUTPUT_DIR: str = f"{self.ITEM_DIRECTORY}/audio"
         self.THUMBNAIL_OUTPUT_DIR: str = f"{self.ITEM_DIRECTORY}/thumbnail"
@@ -35,6 +36,7 @@ class Darya:
         os.makedirs(self.ITEM_OUTPUT_DIR, exist_ok=True)
         os.makedirs(self.ITEM_OUTPUT_DIR, exist_ok=True)
         os.makedirs(self.MPDS_OUTPUT_DIR, exist_ok=True)
+        os.makedirs(self.LICENSE_OUTPUT_DIR, exist_ok=True)
         os.makedirs(self.VIDEO_OUTPUT_DIR, exist_ok=True)
         os.makedirs(self.AUDIO_OUTPUT_DIR, exist_ok=True)
         os.makedirs(self.THUMBNAIL_OUTPUT_DIR, exist_ok=True)
@@ -148,6 +150,9 @@ class Darya:
         pass
 
     def download_background(self: Self) -> Union[pathlib.Path, None]:
+        pass
+
+    def download_license(self: Self) -> Union[pathlib.Path, None]:
         pass
 
     def download_media(
@@ -295,10 +300,12 @@ class Darya:
     ) -> None:
         item = self.get_item()
 
-        if output is None:
-            output = pathlib.Path(f"{self.ITEM_OUTPUT_DIR}/{self.item_identity}.mp4")
-
         if item and (item_media := item.get("trailer")):
+            if not output:
+                output = pathlib.Path(
+                    f"{self.ITEM_OUTPUT_DIR}/{self.item_identity}.mp4"
+                )
+
             media_identity = item.get("trailerID")
             mpds = item_media["mpds"]
             mpd = download_file(
