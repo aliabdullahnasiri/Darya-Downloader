@@ -322,7 +322,7 @@ class Darya:
         if item and (item_media := item.get("trailer")):
             if not self.output:
                 self.output = pathlib.Path(
-                    f"{self.ITEM_OUTPUT_DIR}/{self.item_identity}.mp4"
+                    f"{self.ITEM_OUTPUT_DIR}/{self.item_identity}-{self.resolution}.mp4"
                 )
 
             # call the print method and Print information about item
