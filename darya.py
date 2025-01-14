@@ -298,8 +298,8 @@ class Darya:
         if output is None:
             output = pathlib.Path(f"{self.ITEM_OUTPUT_DIR}/{self.item_identity}.mp4")
 
-        if item and (item_media := item.get("media") or item.get("trailer")):
-            media_identity = item.get("mediaID") or item.get("trailerID")
+        if item and (item_media := item.get("trailer")):
+            media_identity = item.get("trailerID")
             mpds = item_media["mpds"]
             mpd = download_file(
                 link := mpds.pop(0),
@@ -317,3 +317,5 @@ class Darya:
                 if media:
                     video_bytes, audio_bytes = media
                     self.merge_media(video_bytes, audio_bytes, output)
+        else:
+            logger.error(f"Failed to find item with ID: {self.item_identity!r}.")
