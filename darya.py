@@ -31,6 +31,7 @@ class Darya:
     item_identity: str
     resolution: Literal["1920x1080", "1280x720", "854x480", "426x240"] = "1920x1080"
     audio: Literal["128k", "256k", "320k"] = "128k"
+    threads: int = 10
     output: Union[pathlib.Path, None] = None
 
     def __post_init__(self: Self) -> None:
@@ -242,7 +243,9 @@ class Darya:
                                     ):
                                         f.write(open(i, "rb").read())
 
-                                    with ThreadPoolExecutor(max_workers=10) as executor:
+                                    with ThreadPoolExecutor(
+                                        max_workers=self.threads
+                                    ) as executor:
                                         futures = [
                                             executor.submit(
                                                 self.download_segment,
