@@ -49,6 +49,9 @@ def choose_mpd_file(directory: str = "downloads/mpds") -> Union[Path, None]:
 
 def download_file(url: str, output: pathlib.Path) -> Union[pathlib.Path, None]:
     """Download a file from the given URL and save it to the output path."""
+    if output.exists():
+        return output
+
     response = requests.get(url, stream=True)
 
     if size := response.headers.get("content-length"):
