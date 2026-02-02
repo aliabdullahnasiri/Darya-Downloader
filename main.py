@@ -30,11 +30,6 @@ def main() -> None: ...
     default="128k",
     help="Specify the audio bitrate representation to download (e.g., 128k).",
 )
-@click.option(
-    "--output",
-    type=click.Path(),
-    help="Specify the output file path.",
-)
 def download(
     item_id: str,
     resolution: Literal[
@@ -44,9 +39,8 @@ def download(
         "426x240",
     ] = "1920x1080",
     audio: Literal["128k", "256k", "320k"] = "128k",
-    output: Union[pathlib.Path, None] = None,
 ) -> None:
-    darya: Darya = Darya(item_id, resolution, audio, output)
+    darya: Darya = Darya(item_id, resolution, audio)
     darya.download()
 
 
