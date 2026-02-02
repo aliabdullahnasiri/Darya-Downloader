@@ -15,6 +15,7 @@ import pyfiglet
 import requests
 from rich.table import Table
 from rich.traceback import install
+from werkzeug.utils import secure_filename
 
 from console import console
 from functions import audio_bitrate2representation as ab2r
@@ -35,7 +36,7 @@ class Darya:
     def __post_init__(self: Self) -> None:
         self.DOWNLOAD_DIR: str = "downloads"
         self.ITEM_DIRECTORY: str = f"{self.DOWNLOAD_DIR}/{self.item_identity}"
-        self.ITEM_OUTPUT_DIR: str = f"{self.ITEM_DIRECTORY}/output"
+        self.ITEM_OUTPUT_DIR: str = f"{self.ITEM_DIRECTORY}/output/{self.resolution}"
         self.MPDS_OUTPUT_DIR: str = f"{self.ITEM_DIRECTORY}/mpds"
         self.LICENSE_OUTPUT_DIR: str = f"{self.ITEM_DIRECTORY}/license"
         self.VIDEO_OUTPUT_DIR: str = f"{self.ITEM_DIRECTORY}/video/{self.resolution}"
@@ -201,6 +202,7 @@ class Darya:
             id = item["id"]
             mid = item["mediaID"]
             mpds = self.download_mpds(id, item["media"]["mpds"])
+            title = item["title"]["en"]
 
             self.download_thumbnail(item["thumbnail"])
             self.download_background(item["background"])
@@ -263,7 +265,9 @@ class Darya:
                     # Define your paths
                     video = pathlib.Path(f"{self.VIDEO_OUTPUT_DIR}/video.mp4")
                     audio = pathlib.Path(f"{self.AUDIO_OUTPUT_DIR}/audio.mp3")
-                    output = pathlib.Path("/tmp/output.mp4")
+                    output = pathlib.Path(
+                        f"{self.ITEM_OUTPUT_DIR}/{secure_filename(title)}.mp4"
+                    )
 
                     if video.exists() and audio.exists():
                         # Construct the FFmpeg command
@@ -276,7 +280,7 @@ class Darya:
                             video,  # First input (video)
                             "-c",
                             "copy",  # Copy video stream (no re-encoding)
-                            str(output),  # Output file
+                            str(output),
                         ]
 
                         try:
@@ -330,26 +334,32 @@ class Darya:
         )
 
     def download_thumbnail(self: Self, tid: str) -> Union[pathlib.Path, None]:
-        response: requests.Response = requests.get(
-            f"https://ffprod2s3.b-cdn.net/c/278/images/{tid}.jpg"
-        )
+        path = pathlib.Path(f"{self.THUMBNAIL_OUTPUT_DIR}/thumbnail.jpg")
 
-        with open(_ := pathlib.Path(f"{self.BG_OUTPUT_DIR}/thumbnail.jpg"), "wb") as f:
-            f.write(response.content)
+        if not path.exists():
+            response: requests.Response = requests.get(
+                f"https://ffprod2s3.b-cdn.net/c/278/images/{tid}.jpg"
+            )
 
-        if _.exists():
-            logger.success(f"Thumbnail Successfully saved in {_}!")
+            with open(path, "wb") as f:
+                f.write(response.content)
+
+            if path.exists():
+                logger.success(f"Thumbnail Successfully saved in <b>{path}</b>!")
 
     def download_background(self: Self, bid) -> Union[pathlib.Path, None]:
-        response: requests.Response = requests.get(
-            f"https://ffprod2s3.b-cdn.net/c/278/images/{bid}.jpg"
-        )
+        path = pathlib.Path(f"{self.BG_OUTPUT_DIR}/{bid}.jpg")
 
-        with open(_ := pathlib.Path(f"{self.BG_OUTPUT_DIR}/{bid}.jpg"), "wb") as f:
-            f.write(response.content)
+        if not path.exists():
+            response: requests.Response = requests.get(
+                f"https://ffprod2s3.b-cdn.net/c/278/images/{bid}.jpg"
+            )
 
-        if _.exists():
-            logger.success(f"Background Successfully saved in {_}!")
+            with open(path, "wb") as f:
+                f.write(response.content)
+
+            if path.exists():
+                logger.success(f"Background Successfully saved in <b>{path}</b>!")
 
     def decrypt(
         self: Self,
