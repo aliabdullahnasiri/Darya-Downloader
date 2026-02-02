@@ -187,7 +187,7 @@ class Darya:
 
         return idx, None
 
-    def merge(self: Self, f) -> None:
+    def combine(self: Self, f) -> None:
         for value in {
             key: self.downloaded.get(key) for key in sorted(self.downloaded)
         }.values():
@@ -258,7 +258,7 @@ class Darya:
                                             if file_path:
                                                 self.downloaded[idx] = file_path
 
-                                    self.merge(f)
+                                    self.combine(f)
 
                                 self.decrypt_video(key, ff, f"{path}/{filename}")
 
