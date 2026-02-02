@@ -5,6 +5,7 @@ import random
 import re
 import subprocess
 import xml.etree.ElementTree as ET
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from os.path import basename
 from typing import Dict, List, Literal, Self, Union
@@ -54,6 +55,8 @@ class Darya:
             os.makedirs(self.AUDIO_OUTPUT_DIR, exist_ok=True)
             os.makedirs(self.THUMBNAIL_OUTPUT_DIR, exist_ok=True)
             os.makedirs(self.BG_OUTPUT_DIR, exist_ok=True)
+
+        self.downloaded: Dict[int, pathlib.Path] = {}
 
         self.init()
 
@@ -175,6 +178,22 @@ class Darya:
 
         return paths
 
+    def download_segment(self: Self, idx: int, segment, path):
+        output = pathlib.Path(path) / basename(segment)
+
+        if download_file(segment, output):
+            return idx, output
+
+        return idx, None
+
+    def merge(self: Self, f) -> None:
+        for value in {
+            key: self.downloaded.get(key) for key in sorted(self.downloaded)
+        }.values():
+            if value:
+                with open(value, "rb") as ff:
+                    f.write(ff.read())
+
     def download(self: Self) -> None:
         item = self.item
 
@@ -221,15 +240,23 @@ class Darya:
                                     ):
                                         f.write(open(i, "rb").read())
 
-                                    for idx, segment in enumerate(segments, 0):
-                                        if s := download_file(
-                                            segment,
-                                            pathlib.Path(f"{path}/{basename(segment)}"),
-                                        ):
-                                            f.write(open(s, "rb").read())
+                                    with ThreadPoolExecutor(max_workers=10) as executor:
+                                        futures = [
+                                            executor.submit(
+                                                self.download_segment,
+                                                idx,
+                                                segment,
+                                                path,
+                                            )
+                                            for idx, segment in enumerate(segments[:])
+                                        ]
 
-                                        if idx == 10:
-                                            break
+                                        for future in as_completed(futures):
+                                            idx, file_path = future.result()
+                                            if file_path:
+                                                self.downloaded[idx] = file_path
+
+                                    self.merge(f)
 
                                 self.decrypt_video(key, ff, f"{path}/{filename}")
 
