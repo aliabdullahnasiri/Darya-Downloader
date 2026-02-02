@@ -1,5 +1,4 @@
-import pathlib
-from typing import Literal, Union
+from typing import Literal
 
 import click
 
