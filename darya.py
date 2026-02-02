@@ -1,11 +1,16 @@
+import enum
+import json
 import os
 import pathlib
 import random
+import re
+import subprocess
 import uuid
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
+from os.path import basename
 from typing import Dict, List, Literal, Self, Tuple, Union
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 
 import ffmpeg
 import pyfiglet
@@ -68,7 +73,7 @@ class Darya:
             return self._item
 
         response: requests.Response = requests.get(
-            f"https://ffprod2s3.b-cdn.net/c/278/catalog/d_35ePcIfifmsHJgZ7G_Yw/item/{self.item_identity}.json"
+            f"https://ffprod2s3.b-cdn.net/c/278/catalog/4FM71hGHCuwLjg-sGYSA4Q/item/{self.item_identity}.json"
         )
 
         if response.status_code == 200:
@@ -98,6 +103,7 @@ class Darya:
         for adaptation_set in root.findall(".//AdaptationSet", namespaces):
             content_type = adaptation_set.get("contentType", "unknown")
             segment_template = adaptation_set.find("SegmentTemplate", namespaces)
+            pssh = adaptation_set.find("ContentProtection//cenc:pssh", namespaces)
 
             if segment_template is None:
                 logger.warning(f"No SegmentTemplate found for {content_type!r}")
@@ -118,6 +124,9 @@ class Darya:
                 )
 
                 representation_dct["mime-type"] = representation.get("mimeType")
+
+                if pssh is not None:
+                    representation_dct["pssh"] = pssh.text
 
                 if initialization and representation_id:
                     init_url = base_url + initialization.replace(
@@ -159,11 +168,11 @@ class Darya:
 
         return representations
 
-    def download_mpds(self: Self, mpds: List[str]) -> List[pathlib.Path]:
+    def download_mpds(self: Self, mid: str, mpds: List[str]) -> List[pathlib.Path]:
         paths: List[pathlib.Path] = []
 
         for mpd in mpds:
-            path = pathlib.Path(f"downloads/mpds/{os.path.basename(mpd)}")
+            path = pathlib.Path(f"downloads/{mid}/mpds/{os.path.basename(mpd)}")
 
             if not os.path.exists(path):
                 download_file(mpd, path)
@@ -172,184 +181,159 @@ class Darya:
 
         return paths
 
-    def download_thumbnail(self: Self) -> Union[pathlib.Path, None]:
-        pass
-
-    def download_background(self: Self) -> Union[pathlib.Path, None]:
-        pass
-
-    def download_license(self: Self) -> Union[pathlib.Path, None]:
-        pass
-
-    def download_media(
-        self: Self,
-        mpd: pathlib.Path,
-        base: str,
-        resolution: Literal[
-            "1920x1080", "1280x720", "854x480", "426x240"
-        ] = "1920x1080",
-        audio: Literal["128k", "256k", "320k"] = "128k",
-    ) -> Union[Tuple[bytes, bytes], None]:
-        representations = self.get_representations(str(mpd), base)
-        vrepr_id = r2r(resolution)
-        arepr_id = ab2r(audio)
-        representations = list(
-            filter(
-                lambda representation: representation["mime-type"] == "video/mp4"
-                and representation["representation-id"] == vrepr_id
-                or representation["mime-type"] == "audio/mp4"
-                and representation["representation-id"] == arepr_id,
-                representations,
-            )
-        )
-
-        if len(representations) == 2:
-            video_links: List[str] = []
-            audio_links: List[str] = []
-
-            for representation in representations:
-                init_file = representation["init"]
-                mime_type = representation["mime-type"]
-                segments = representation["segments"]
-
-                if mime_type == "video/mp4":
-                    video_links.append(init_file)
-                    video_links.extend(segments)
-                elif mime_type == "audio/mp4":
-                    audio_links.append(init_file)
-                    audio_links.extend(segments)
-
-            video_bytes: bytes = b""
-            audio_bytes: bytes = b""
-
-            for video_link in video_links:
-                filename = os.path.basename(urlparse(video_link).path)
-                path = pathlib.Path(f"{self.VIDEO_OUTPUT_DIR}/{filename}")
-
-                if not os.path.exists(path):
-                    download_file(video_link, path)
-                else:
-                    logger.info(f"The file '{path}' already exists.")
-
-                if os.path.exists(path):
-                    with open(path, "rb") as f:
-                        video_bytes += f.read()
-
-            for audio_link in audio_links:
-                filename = os.path.basename(urlparse(audio_link).path)
-                path = pathlib.Path(f"{self.AUDIO_OUTPUT_DIR}/{filename}")
-
-                if not os.path.exists(path):
-                    download_file(audio_link, path)
-                else:
-                    logger.info(f"The file '{path}' already exists.")
-
-                if os.path.exists(path):
-                    with open(path, "rb") as f:
-                        audio_bytes += f.read()
-
-            return video_bytes, audio_bytes
-
-        else:
-            logger.warning(
-                "No matching video or audio representation ID was found. Please check the provided resolution or bitrate."
-            )
-
-    def merge_media(
-        self: Self, video: bytes, audio: bytes, output: pathlib.Path
-    ) -> Union[pathlib.Path, None]:
-        if output.exists():
-            choice = Prompt.ask(
-                f"The output file '{output}' has been created. Do you want to keep it?",
-                choices=["yes", "no"],
-                show_default=True,
-                default="yes",
-            )
-
-            if choice == "no":
-                os.remove(output)
-
-                logger.info(
-                    "Output file '{output}' has been deleted at the user's request."
-                )
-
-            else:
-                logger.info(f"Output file '{output}' has been kept.")
-
-        if not output.exists():
-            try:
-                logger.info(f"Starting merge of video and audio into '{output}'.")
-
-                video_path: pathlib.Path = pathlib.Path(
-                    f"/tmp/{self.item_identity}-{uuid.uuid4()}.mp4"
-                )
-                audio_path: pathlib.Path = pathlib.Path(
-                    f"/tmp/{self.item_identity}-{uuid.uuid4()}.mp3"
-                )
-
-                with open(video_path, "wb") as f:
-                    f.write(video)
-
-                with open(audio_path, "wb") as f:
-                    f.write(audio)
-
-                # Using ffmpeg-python to merge audio and video
-                ffmpeg.output(
-                    ffmpeg.input(video_path),
-                    ffmpeg.input(audio_path),
-                    str(output),
-                    vcodec="copy",  # Copy the video stream without re-encoding
-                    acodec="aac",  # Encode the audio in AAC format
-                ).run()
-
-                if output.exists():
-                    logger.success(f"Successfully merged into '{output}'.")
-
-                    return output
-                else:
-                    logger.error(
-                        f"Merge failed: Output file '{output}' was not created."
-                    )
-
-            except ffmpeg.Error as e:
-                logger.error(f"An error occurred while merging: {e.stderr.decode()}")
-            except Exception as ex:
-                logger.exception(f"An unexpected error occurred: {ex}")
-
     def download(self: Self) -> None:
         item = self.item
 
-        if item and (item_media := item.get("trailer")):
-            if not self.output:
-                self.output = pathlib.Path(
-                    f"{self.ITEM_OUTPUT_DIR}/{self.item_identity}-{self.resolution}.mp4"
-                )
+        if item:
+            id = item["id"]
+            mid = item["mediaID"]
+            mpds = self.download_mpds(id, item["media"]["mpds"])
 
-            # call the print method and Print information about item
-            self.print()
+            mpd = mpds[-1]
 
-            media_identity = item.get("trailerID")
-            mpds = item_media["mpds"]
-            mpd = download_file(
-                link := mpds.pop(0),
-                pathlib.Path(
-                    f"{self.MPDS_OUTPUT_DIR}/{os.path.basename(urlparse(link).path)}"
-                ),
-            )
+            for mpd in mpds:
+                if re.search(re.compile(rf"{self.resolution}"), f"{mpd}"):
+                    for repr in self.get_representations(
+                        f"{mpd}", f"https://ffprod2.b-cdn.net/c/278/m/{mid}.ism/"
+                    ):
+                        init = repr["init"]
+                        mime = repr["mime-type"]
+                        rid = repr["representation-id"]
+                        segments = repr["segments"]
+                        pssh = repr["pssh"]
 
-            if media_identity and mpd:
-                media = self.download_media(
-                    mpd,
-                    f"https://ffprod2.b-cdn.net/c/278/m/{media_identity}.ism/",
-                    self.resolution,
-                    self.audio,
-                )
+                        if r2r(self.resolution) == rid or ab2r(self.audio):
+                            key = self.decrypt(pssh, self.license_url())
 
-                if media:
-                    video_bytes, audio_bytes = media
-                    self.merge_media(video_bytes, audio_bytes, self.output)
+                            t = (None, None)
+
+                            match mime:
+                                case "video/mp4":
+                                    t = ("video.mp4", f"{self.VIDEO_OUTPUT_DIR}")
+
+                                case "audio/mp4":
+                                    t = ("audio.mp3", f"{self.AUDIO_OUTPUT_DIR}")
+
+                            filename, path = t
+
+                            if filename and path:
+                                with open(ff := f"{path}/.{filename}", "wb") as f:
+                                    if i := download_file(
+                                        init,
+                                        pathlib.Path(f"{path}/{basename(init)}"),
+                                    ):
+                                        f.write(open(i, "rb").read())
+
+                                    for idx, segment in enumerate(segments, 0):
+                                        if s := download_file(
+                                            segment,
+                                            pathlib.Path(f"{path}/{basename(segment)}"),
+                                        ):
+                                            f.write(open(s, "rb").read())
+
+                                        if idx == 10:
+                                            break
+
+                                self.decrypt_video(key, ff, f"{path}/{filename}")
+
+                    # Define your paths
+                    video = pathlib.Path(f"{self.VIDEO_OUTPUT_DIR}/video.mp4")
+                    audio = pathlib.Path(f"{self.AUDIO_OUTPUT_DIR}/audio.mp3")
+                    output = pathlib.Path("/tmp/output.mp4")
+
+                    if video.exists() and audio.exists():
+                        # Construct the FFmpeg command
+                        command = [
+                            "ffmpeg",
+                            "-y",  # Overwrite output file if it exists
+                            "-i",
+                            audio,  # Second input (audio)
+                            "-i",
+                            video,  # First input (video)
+                            "-c",
+                            "copy",  # Copy video stream (no re-encoding)
+                            str(output),  # Output file
+                        ]
+
+                        try:
+                            # Run the command
+                            # check=True will raise an exception if the command fails
+                            subprocess.run(
+                                command, check=True, capture_output=True, text=True
+                            )
+
+                            if output.exists():
+                                logger.success(f"Successfully merged into '{output}'.")
+                            else:
+                                logger.error(
+                                    f"Merge failed: Output file '{output}' was not created."
+                                )
+
+                        except subprocess.CalledProcessError as e:
+                            logger.error(
+                                f"FFmpeg process failed with error:\n{e.stderr}"
+                            )
+
+                    break
+
         else:
             logger.error(f"Failed to find item with ID: {self.item_identity!r}.")
+
+    def decrypt_video(self: Self, key, input_file, output_file):
+        command = ["mp4decrypt", "--key", f"{key}", input_file, output_file]
+
+        try:
+            subprocess.run(command, check=True)
+            logger.success(f"Successfully decrypted {output_file}")
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Error during decryption: {e}")
+
+    def license_url(
+        self: Self,
+        item_id: Union[str, None] = None,
+        device_id: Union[str, None] = None,
+    ):
+        return f"https://www.darya.net/api/1.0/license??itemID={item_id}&deviceId={device_id}"
+
+    def download_license(
+        self: Self,
+        item_id: Union[str, None] = None,
+        device_id: Union[str, None] = None,
+    ) -> Union[pathlib.Path, None]:
+        return download_file(
+            url := self.license_url(item_id, device_id),
+            pathlib.Path(f"{self.LICENSE_OUTPUT_DIR}/{basename(urlparse(url).path)}"),
+        )
+
+    def decrypt(
+        self: Self,
+        pssh: str,
+        licurl: str,
+        proxy=None,
+        headers=None,
+        cookies=None,
+        data=None,
+        device="default",
+    ):
+        response: requests.Response = requests.post(
+            "https://cdrm-project.com/api/decrypt",
+            data=json.dumps(
+                {
+                    "pssh": pssh,
+                    "licurl": licurl,
+                    "proxy": proxy,
+                    "headers": headers,
+                    "cookies": cookies,
+                    "data": data,
+                    "device": device,
+                }
+            ),
+            headers={"Content-Type": "application/json"},
+        )
+
+        dct = response.json()
+
+        return dct["message"]
 
     def print(self: Self) -> None:
         if item := self.item:
