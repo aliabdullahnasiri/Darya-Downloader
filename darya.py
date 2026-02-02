@@ -1,23 +1,17 @@
-import enum
 import json
 import os
 import pathlib
 import random
 import re
 import subprocess
-import uuid
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from os.path import basename
-from typing import Dict, List, Literal, Self, Tuple, Union
-from urllib.parse import parse_qs, urlparse
+from typing import Dict, List, Literal, Self, Union
+from urllib.parse import urlparse
 
-import ffmpeg
 import pyfiglet
 import requests
-from rich.emoji import Emoji
-from rich.panel import Panel
-from rich.prompt import Prompt
 from rich.table import Table
 from rich.traceback import install
 
