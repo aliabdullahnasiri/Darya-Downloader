@@ -183,6 +183,9 @@ class Darya:
             mid = item["mediaID"]
             mpds = self.download_mpds(id, item["media"]["mpds"])
 
+            self.download_thumbnail(item["thumbnail"])
+            self.download_background(item["background"])
+
             mpd = mpds[-1]
 
             for mpd in mpds:
@@ -298,6 +301,28 @@ class Darya:
             url := self.license_url(item_id, device_id),
             pathlib.Path(f"{self.LICENSE_OUTPUT_DIR}/{basename(urlparse(url).path)}"),
         )
+
+    def download_thumbnail(self: Self, tid: str) -> Union[pathlib.Path, None]:
+        response: requests.Response = requests.get(
+            f"https://ffprod2s3.b-cdn.net/c/278/images/{tid}.jpg"
+        )
+
+        with open(_ := pathlib.Path(f"{self.BG_OUTPUT_DIR}/thumbnail.jpg"), "wb") as f:
+            f.write(response.content)
+
+        if _.exists():
+            logger.success(f"Thumbnail Successfully saved in {_}!")
+
+    def download_background(self: Self, bid) -> Union[pathlib.Path, None]:
+        response: requests.Response = requests.get(
+            f"https://ffprod2s3.b-cdn.net/c/278/images/{bid}.jpg"
+        )
+
+        with open(_ := pathlib.Path(f"{self.BG_OUTPUT_DIR}/{bid}.jpg"), "wb") as f:
+            f.write(response.content)
+
+        if _.exists():
+            logger.success(f"Background Successfully saved in {_}!")
 
     def decrypt(
         self: Self,
