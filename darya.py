@@ -209,8 +209,6 @@ class Darya:
             self.download_thumbnail(item["thumbnail"])
             self.download_background(item["background"])
 
-            mpd = mpds[-1]
-
             for mpd in mpds:
                 if re.search(re.compile(rf"{self.resolution}"), f"{mpd}"):
                     for repr in self.get_representations(
@@ -222,7 +220,7 @@ class Darya:
                         segments = repr["segments"]
                         pssh = repr["pssh"]
 
-                        if r2r(self.resolution) == rid or ab2r(self.audio):
+                        if r2r(self.resolution) == rid or ab2r(self.audio) == rid:
                             key = self.decrypt(pssh, self.license_url())
 
                             t = (None, None)
