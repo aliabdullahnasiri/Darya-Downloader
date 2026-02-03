@@ -32,6 +32,7 @@ class Darya:
     resolution: Literal["1920x1080", "1280x720", "854x480", "426x240"] = "1920x1080"
     audio: Literal["128k", "256k", "320k"] = "128k"
     threads: int = 10
+    verbose: bool = False
     output: Union[pathlib.Path, None] = None
 
     def __post_init__(self: Self) -> None:
@@ -240,6 +241,7 @@ class Darya:
                                     if i := download_file(
                                         init,
                                         pathlib.Path(f"{path}/{basename(init)}"),
+                                        self.verbose,
                                     ):
                                         f.write(open(i, "rb").read())
 
