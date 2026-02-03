@@ -6,3 +6,5 @@ pyfiglet
 pyrogram
 telethon
 ffmpeg-python
+FastTelethonhelper
+cryptg
