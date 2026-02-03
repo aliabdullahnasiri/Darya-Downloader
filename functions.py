@@ -10,7 +10,7 @@ from console import console
 from logger import logger
 
 
-def get_video_info(file_path: str):
+def get_video_info(file_path: pathlib.Path):
     try:
         # Probe the file
         probe = ffmpeg.probe(file_path)
