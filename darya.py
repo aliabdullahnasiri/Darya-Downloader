@@ -330,6 +330,7 @@ class Darya:
                 break
 
             for file in downloaded.values():
+                print(file)
                 self.send_video(file)
 
             console.print(downloaded)
