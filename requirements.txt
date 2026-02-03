@@ -1,3 +1,4 @@
 loguru
 rich
 click
+pyfiglet
