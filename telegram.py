@@ -37,7 +37,7 @@ class Telegram:
     ) -> None:
 
         async with self._client:
-            if thumbnail and thumbnail.exists():
+            if thumbnail is not None and thumbnail.exists():
                 await self._client.send_file(
                     self.channel_username,
                     f"{thumbnail}",
