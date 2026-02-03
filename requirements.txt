@@ -1,17 +1,3 @@
-requests[socks]
-webdriver-manager
-selenium
 loguru
-stem
 rich
 click
-pydantic
-jinja2
-numerize
-fake_useragent
-python-telegram-bot
-pillow
-flask
-pyngrok
-pyfiglet
-ffmpeg-python
