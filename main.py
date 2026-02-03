@@ -43,6 +43,8 @@ def download(
     threads: int = 10,
     verbose: bool = False,
 ) -> None:
+    Darya.banner()
+
     darya: Darya = Darya(item_id, resolution, audio, threads, verbose)
     darya.download()
 
