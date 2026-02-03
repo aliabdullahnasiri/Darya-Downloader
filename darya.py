@@ -1,3 +1,4 @@
+import copy
 import json
 import os
 import pathlib
@@ -13,7 +14,6 @@ from urllib.parse import urlparse
 
 import pyfiglet
 import requests
-from rich.table import Table
 from rich.traceback import install
 from werkzeug.utils import secure_filename
 
@@ -32,6 +32,7 @@ class Darya:
     resolution: Literal["1920x1080", "1280x720", "854x480", "426x240"] = "1920x1080"
     audio: Literal["128k", "256k", "320k"] = "128k"
     threads: int = 10
+    verbose: bool = False
     output: Union[pathlib.Path, None] = None
 
     def __post_init__(self: Self) -> None:
@@ -60,14 +61,8 @@ class Darya:
 
         self.downloaded: Dict[int, pathlib.Path] = {}
 
-        self.init()
-
-    def init(self: Self) -> None:
-        # Print the tool banner
-        self.banner()
-
     @property
-    def item(self: Self) -> Union[Dict, None]:
+    def item(self: Self) -> Union[Dict, List[Dict[str, str]], None]:
         if hasattr(self, "_item"):
             return self._item
 
@@ -76,7 +71,13 @@ class Darya:
         )
 
         if response.status_code == 200:
-            item = self._item = response.json()
+            data = response.json()
+
+            item = self._item = (
+                data
+                if "children" not in data
+                else [child for child in data["children"]]
+            )
 
             return item
 
@@ -196,10 +197,10 @@ class Darya:
                 with open(value, "rb") as ff:
                     f.write(ff.read())
 
-    def download(self: Self) -> None:
+    def download(self: Self) -> Union[pathlib.Path, None]:
         item = self.item
 
-        if item:
+        if type(item) is dict:
             id = item["id"]
             mid = item["mediaID"]
             mpds = self.download_mpds(id, item["media"]["mpds"])
@@ -238,6 +239,7 @@ class Darya:
                                     if i := download_file(
                                         init,
                                         pathlib.Path(f"{path}/{basename(init)}"),
+                                        self.verbose,
                                     ):
                                         f.write(open(i, "rb").read())
 
@@ -293,6 +295,8 @@ class Darya:
 
                             if output.exists():
                                 logger.success(f"Successfully merged into '{output}'.")
+
+                                return output
                             else:
                                 logger.error(
                                     f"Merge failed: Output file '{output}' was not created."
@@ -305,6 +309,15 @@ class Darya:
 
                     break
 
+        elif type(item) is list:
+            downloaded: Dict[int, pathlib.Path] = {}
+
+            for idx, item in enumerate(copy.deepcopy(item)):
+                darya: Darya = Darya(item["id"])
+                if download := darya.download():
+                    downloaded[idx] = download
+
+            console.print(downloaded)
         else:
             logger.error(f"Failed to find item with ID: {self.item_identity!r}.")
 
@@ -392,28 +405,8 @@ class Darya:
 
         return dct["message"]
 
-    def print(self: Self) -> None:
-        if item := self.item:
-            table: Table = Table(style="cyan bold")
-
-            identity: str = item["id"]
-            title: str = item["title"]["en"]
-            thumbnail: str = item["thumbnail"]
-            background: str = item["background"]
-
-            table.add_column("No")
-            table.add_column("ID", style="green")
-            table.add_column("Title", style="white bold")
-            table.add_column("Thumbnail ID", style="italic underline")
-            table.add_column("Background ID", style="italic underline")
-
-            row: List[str] = ["00", identity, title, thumbnail, background]
-
-            table.add_row(*row)
-
-            console.print(table)
-
-    def banner(self: Self) -> None:
+    @staticmethod
+    def banner() -> None:
         fonts = pyfiglet.FigletFont.getFonts()
         font = random.choice(fonts)
         colors = ["red", "cyan", "green", "white", "yellow"]
