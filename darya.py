@@ -327,8 +327,6 @@ class Darya:
                 darya: Darya = Darya(id, self.resolution, self.audio, self.threads)
                 if download := darya.download():
                     downloaded[idx] = download
-
-                break
         else:
             logger.error(f"Failed to find item with ID: {self.item_identity!r}.")
 
