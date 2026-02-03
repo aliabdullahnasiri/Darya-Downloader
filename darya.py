@@ -357,7 +357,7 @@ class Darya:
                             info["duration"],
                             info["width"],
                             info["height"],
-                            thumbnail=self.thumbnail,
+                            thumb=info["thumb"],
                         )
                     )
 
