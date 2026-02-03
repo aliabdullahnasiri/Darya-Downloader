@@ -2,3 +2,4 @@ loguru
 rich
 click
 pyfiglet
+pyrogram
