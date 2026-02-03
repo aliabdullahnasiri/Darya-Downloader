@@ -1,3 +1,4 @@
+import io
 import pathlib
 from pathlib import Path
 from typing import Literal, Union
@@ -24,6 +25,16 @@ def get_video_info(file_path: pathlib.Path):
         if not video_stream:
             return None
 
+        out, _ = (
+            ffmpeg.input(file_path, ss=1)  # Seek to 1 second
+            .filter("scale", 320, -1)  # Resize to 320px width
+            .output("pipe:", vframes=1, format="image2", vcodec="mjpeg")
+            .run(capture_stdout=True, quiet=True)
+        )
+
+        thumb = io.BytesIO(out)
+        thumb.name = "thumb.jpg"
+
         # Extract details
         return {
             "width": int(video_stream.get("width")),
@@ -33,6 +44,7 @@ def get_video_info(file_path: pathlib.Path):
             "codec": video_stream.get("codec_name"),
             "bitrate": int(video_stream.get("bit_rate", 0)),
             "fps": eval(video_stream.get("avg_frame_rate")),  # Converts "30/1" to 30.0
+            "thumb": thumb,
         }
     except ffmpeg.Error as e:
         print(f"Error: {e.stderr.decode()}")
