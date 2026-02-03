@@ -2,11 +2,41 @@ import pathlib
 from pathlib import Path
 from typing import Literal, Union
 
+import ffmpeg
 import requests
 from rich.prompt import Prompt
 
 from console import console
 from logger import logger
+
+
+def get_video_info(file_path: str):
+    try:
+        # Probe the file
+        probe = ffmpeg.probe(file_path)
+
+        # Look for the video stream
+        video_stream = next(
+            (stream for stream in probe["streams"] if stream["codec_type"] == "video"),
+            None,
+        )
+
+        if not video_stream:
+            return None
+
+        # Extract details
+        return {
+            "width": int(video_stream.get("width")),
+            "height": int(video_stream.get("height")),
+            "duration": float(video_stream.get("duration", 0)),
+            "size_bytes": pathlib.Path(file_path).stat().st_size,
+            "codec": video_stream.get("codec_name"),
+            "bitrate": int(video_stream.get("bit_rate", 0)),
+            "fps": eval(video_stream.get("avg_frame_rate")),  # Converts "30/1" to 30.0
+        }
+    except ffmpeg.Error as e:
+        print(f"Error: {e.stderr.decode()}")
+        return None
 
 
 def choose_mpd_file(directory: str = "downloads/mpds") -> Union[Path, None]:
