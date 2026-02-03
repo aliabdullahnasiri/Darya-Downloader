@@ -213,6 +213,13 @@ class Darya:
             mpds = self.download_mpds(id, item["media"]["mpds"])
             title = item["title"]["en"]
 
+            output = pathlib.Path(
+                f"{self.ITEM_OUTPUT_DIR}/{secure_filename(title)}.mp4"
+            )
+
+            if output.exists():
+                return output
+
             self.thumbnail = self.download_thumbnail(item["thumbnail"])
             self.background = self.download_background(item["background"])
 
@@ -275,9 +282,6 @@ class Darya:
                     # Define your paths
                     video = pathlib.Path(f"{self.VIDEO_OUTPUT_DIR}/video.mp4")
                     audio = pathlib.Path(f"{self.AUDIO_OUTPUT_DIR}/audio.mp3")
-                    output = pathlib.Path(
-                        f"{self.ITEM_OUTPUT_DIR}/{secure_filename(title)}.mp4"
-                    )
 
                     if video.exists() and audio.exists():
                         # Construct the FFmpeg command
