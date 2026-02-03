@@ -37,11 +37,11 @@ class Telegram:
     ) -> None:
 
         async with self._client:
-            uploaded_thumb = (
-                await self._client.upload_file(thumbnail.open("rb").read())
-                if thumbnail is not None and thumbnail.exists()
-                else None
-            )
+            if thumbnail and thumbnail.exists():
+                await self._client.send_file(
+                    self.channel_username,
+                    f"{thumbnail}",
+                )
 
             await self._client.send_file(
                 self.channel_username,
@@ -57,7 +57,6 @@ class Telegram:
                         supports_streaming=supports_streaming,
                     )
                 ],
-                thumb=uploaded_thumb,
                 progress_callback=self._progress,
             )
             logger.success("Upload complete!")
