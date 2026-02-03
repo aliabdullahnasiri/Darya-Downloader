@@ -302,6 +302,7 @@ class Darya:
 
                             if output.exists():
                                 logger.success(f"Successfully merged into '{output}'.")
+
                                 self.send_video(output)
 
                                 return output
@@ -328,11 +329,6 @@ class Darya:
                     downloaded[idx] = download
 
                 break
-
-            for file in downloaded.values():
-                self.send_video(file)
-
-            console.print(downloaded)
         else:
             logger.error(f"Failed to find item with ID: {self.item_identity!r}.")
 
@@ -359,7 +355,6 @@ class Darya:
                             info["duration"],
                             info["width"],
                             info["height"],
-                            True,
                         )
                     )
 
