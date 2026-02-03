@@ -1,10 +1,12 @@
 import pathlib
 from dataclasses import dataclass, field
+from typing import Optional
 
 from telethon import TelegramClient
 from telethon.sessions import StringSession
 from telethon.tl.types import DocumentAttributeVideo
 
+from env import Env
 from logger import logger
 
 
@@ -31,9 +33,16 @@ class Telegram:
         width: int,
         height: int,
         supports_streaming: bool = True,
+        thumbnail: Optional[pathlib.Path] = None,
     ) -> None:
 
         async with self._client:
+            uploaded_thumb = (
+                await self._client.upload_file(thumbnail.open("rb").read())
+                if thumbnail is not None and thumbnail.exists()
+                else None
+            )
+
             await self._client.send_file(
                 self.channel_username,
                 f"{file_path}",
@@ -48,6 +57,7 @@ class Telegram:
                         supports_streaming=supports_streaming,
                     )
                 ],
+                thumb=uploaded_thumb,
                 progress_callback=self._progress,
             )
             logger.success("Upload complete!")
