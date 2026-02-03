@@ -1,3 +1,4 @@
+werkzeug
 loguru
 rich
 click
