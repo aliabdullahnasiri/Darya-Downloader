@@ -3,3 +3,5 @@ rich
 click
 pyfiglet
 pyrogram
+telethon
+ffmpeg-python
