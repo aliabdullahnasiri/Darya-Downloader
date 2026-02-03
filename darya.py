@@ -1,3 +1,4 @@
+import asyncio
 import copy
 import json
 import os
@@ -18,10 +19,12 @@ from rich.traceback import install
 from werkzeug.utils import secure_filename
 
 from console import console
+from env import Env
 from functions import audio_bitrate2representation as ab2r
 from functions import download_file
 from functions import resolution2representation as r2r
 from logger import logger
+from telegram import Telegram
 
 install()
 
@@ -318,6 +321,24 @@ class Darya:
                 darya: Darya = Darya(id)
                 if download := darya.download():
                     downloaded[idx] = download
+
+                break
+
+            if (
+                Env.API_ID
+                and Env.API_HASH
+                and Env.SESSION_STRING
+                and Env.CHANNEL_USERNAME
+            ):
+                for file in downloaded.values():
+                    tg = Telegram(
+                        api_id=Env.API_ID,
+                        api_hash=Env.API_HASH,
+                        session_str=Env.SESSION_STRING,
+                        channel_username=Env.CHANNEL_USERNAME,
+                    )
+
+                    asyncio.run(tg.upload_video(file, file.name, 300, 1090, 1080))
 
             console.print(downloaded)
         else:
