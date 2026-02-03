@@ -1,7 +1,9 @@
 import pathlib
 from dataclasses import dataclass, field
+from typing import Optional
 
 from telethon import TelegramClient
+from telethon.hints import FileLike
 from telethon.sessions import StringSession
 from telethon.tl.types import DocumentAttributeVideo
 
@@ -29,12 +31,14 @@ class Telegram:
         width: int,
         height: int,
         supports_streaming: bool = True,
+        thumb_path: Optional[FileLike] = None,
     ) -> None:
         async with self._client:
             await self._client.send_file(
                 self.channel_username,
                 f"{file_path}",
                 caption=caption,
+                thumb=thumb_path,
                 force_document=False,
                 supports_streaming=supports_streaming,
                 attributes=[
