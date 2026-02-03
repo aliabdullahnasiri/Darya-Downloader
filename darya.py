@@ -302,6 +302,7 @@ class Darya:
 
                             if output.exists():
                                 logger.success(f"Successfully merged into '{output}'.")
+                                self.send_video(output)
 
                                 return output
                             else:
@@ -328,20 +329,19 @@ class Darya:
 
                 break
 
-            if (
-                Env.API_ID
-                and Env.API_HASH
-                and Env.SESSION_STRING
-                and Env.CHANNEL_USERNAME
-            ):
-                for file in downloaded.values():
-                    self.send_video(file)
+            for file in downloaded.values():
+                self.send_video(file)
 
             console.print(downloaded)
         else:
             logger.error(f"Failed to find item with ID: {self.item_identity!r}.")
 
     def send_video(self: Self, file_path: pathlib.Path) -> None:
+        if not (
+            Env.API_ID and Env.API_HASH and Env.SESSION_STRING and Env.CHANNEL_USERNAME
+        ):
+            return
+
         try:
             tg = Telegram(
                 api_id=Env.API_ID,
