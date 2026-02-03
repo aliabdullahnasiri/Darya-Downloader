@@ -9,6 +9,7 @@ import subprocess
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
+from io import FileIO
 from os.path import basename
 from typing import Dict, List, Literal, Self, Union
 from urllib.parse import urlparse
@@ -21,7 +22,7 @@ from werkzeug.utils import secure_filename
 from console import console
 from env import Env
 from functions import audio_bitrate2representation as ab2r
-from functions import download_file
+from functions import download_file, get_video_info
 from functions import resolution2representation as r2r
 from logger import logger
 from telegram import Telegram
@@ -48,6 +49,9 @@ class Darya:
         self.AUDIO_OUTPUT_DIR: str = f"{self.ITEM_DIRECTORY}/audio/{self.audio}"
         self.THUMBNAIL_OUTPUT_DIR: str = f"{self.ITEM_DIRECTORY}/thumbnail"
         self.BG_OUTPUT_DIR: str = f"{self.ITEM_DIRECTORY}/background"
+
+        self.thumbnail: Union[None, pathlib.Path] = None
+        self.background: Union[None, pathlib.Path] = None
 
         os.makedirs(self.DOWNLOAD_DIR, exist_ok=True)
 
@@ -209,8 +213,8 @@ class Darya:
             mpds = self.download_mpds(id, item["media"]["mpds"])
             title = item["title"]["en"]
 
-            self.download_thumbnail(item["thumbnail"])
-            self.download_background(item["background"])
+            self.thumbnail = self.download_thumbnail(item["thumbnail"])
+            self.background = self.download_background(item["background"])
 
             for mpd in mpds:
                 if re.search(re.compile(rf"{self.resolution}"), f"{mpd}"):
@@ -331,18 +335,37 @@ class Darya:
                 and Env.CHANNEL_USERNAME
             ):
                 for file in downloaded.values():
-                    tg = Telegram(
-                        api_id=Env.API_ID,
-                        api_hash=Env.API_HASH,
-                        session_str=Env.SESSION_STRING,
-                        channel_username=Env.CHANNEL_USERNAME,
-                    )
-
-                    asyncio.run(tg.upload_video(file, file.name, 300, 1090, 1080))
+                    self.send_video(file)
 
             console.print(downloaded)
         else:
             logger.error(f"Failed to find item with ID: {self.item_identity!r}.")
+
+    def send_video(self: Self, file_path: pathlib.Path) -> None:
+        try:
+            tg = Telegram(
+                api_id=Env.API_ID,
+                api_hash=Env.API_HASH,
+                session_str=Env.SESSION_STRING,
+                channel_username=Env.CHANNEL_USERNAME,
+            )
+
+            if file_path.exists() and type(self.item) is dict:
+                if info := get_video_info(file_path):
+                    asyncio.run(
+                        tg.upload_video(
+                            file_path,
+                            self.item["title"]["en"],
+                            info["duration"],
+                            info["width"],
+                            info["height"],
+                            True,
+                            FileIO(self.thumbnail, "rb") if self.thumbnail else None,
+                        )
+                    )
+
+        except Exception as err:
+            print(f"ERROR: {err}")
 
     def decrypt_video(self: Self, key, input_file, output_file):
         command = ["mp4decrypt", "--key", f"{key}", input_file, output_file]
