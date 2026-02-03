@@ -30,7 +30,6 @@ def main() -> None: ...
     help="Specify the audio bitrate representation to download (e.g., 128k).",
 )
 @click.option("--threads", type=int, default=10)
-@click.option("--verbose", is_flag=True, default=False)
 def download(
     item_id: str,
     resolution: Literal[
@@ -41,9 +40,8 @@ def download(
     ] = "1920x1080",
     audio: Literal["128k", "256k", "320k"] = "128k",
     threads: int = 10,
-    verbose: bool = False,
 ) -> None:
-    darya: Darya = Darya(item_id, resolution, audio, threads, verbose)
+    darya: Darya = Darya(item_id, resolution, audio, threads)
     darya.download()
 
 

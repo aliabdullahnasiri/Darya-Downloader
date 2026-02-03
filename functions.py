@@ -47,9 +47,7 @@ def choose_mpd_file(directory: str = "downloads/mpds") -> Union[Path, None]:
     return selected_file
 
 
-def download_file(
-    url: str, output: pathlib.Path, verbose: bool = False
-) -> Union[pathlib.Path, None]:
+def download_file(url: str, output: pathlib.Path) -> Union[pathlib.Path, None]:
     """Download a file from the given URL and save it to the output path."""
     if output.exists():
         return output
@@ -64,11 +62,10 @@ def download_file(
             for chunk in response.iter_content(chunk_size=1024):
                 file.write(chunk)
 
-        if verbose:
-            if size:
-                logger.info(f"Downloaded: <b>{output}</b> (<c>{format_size(size)}</c>)")
-            else:
-                logger.info(f"Downloaded: <b>{output}</b>")
+        if size:
+            logger.info(f"Downloaded: <b>{output}</b> (<c>{format_size(size)}</c>)")
+        else:
+            logger.info(f"Downloaded: <b>{output}</b>")
 
         return pathlib.Path(output)
     else:
