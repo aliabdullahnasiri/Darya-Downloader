@@ -313,7 +313,9 @@ class Darya:
             downloaded: Dict[int, pathlib.Path] = {}
 
             for idx, item in enumerate(copy.deepcopy(item)):
-                darya: Darya = Darya(item["id"])
+                id = item["id"]
+                logger.info(f"Downloading <b>{id!r} ({idx+1})</b>...")
+                darya: Darya = Darya(id)
                 if download := darya.download():
                     downloaded[idx] = download
 
