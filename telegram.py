@@ -1,11 +1,12 @@
 import pathlib
 from dataclasses import dataclass, field
-from typing import Optional
 
+from FastTelethonhelper import fast_upload
 from telethon import TelegramClient
-from telethon.hints import FileLike
 from telethon.sessions import StringSession
 from telethon.tl.types import DocumentAttributeVideo
+
+from logger import logger
 
 
 @dataclass
@@ -31,14 +32,15 @@ class Telegram:
         width: int,
         height: int,
         supports_streaming: bool = True,
-        thumb_path: Optional[FileLike] = None,
     ) -> None:
+
         async with self._client:
             await self._client.send_file(
                 self.channel_username,
-                f"{file_path}",
+                await fast_upload(
+                    self._client, f"{file_path}", progress_bar_function=self._progress
+                ),
                 caption=caption,
-                thumb=thumb_path,
                 force_document=False,
                 supports_streaming=supports_streaming,
                 attributes=[
@@ -49,10 +51,9 @@ class Telegram:
                         supports_streaming=supports_streaming,
                     )
                 ],
-                # Progress bar helper
                 progress_callback=self._progress,
             )
-            print("\nUpload complete!")
+            logger.success("Upload complete!")
 
     @staticmethod
     def _progress(current, total):
