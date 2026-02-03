@@ -322,7 +322,7 @@ class Darya:
             for idx, item in enumerate(copy.deepcopy(item)):
                 id = item["id"]
                 logger.info(f"Downloading <b>{id!r} ({idx+1})</b>...")
-                darya: Darya = Darya(id)
+                darya: Darya = Darya(id, self.resolution, self.audio, self.threads)
                 if download := darya.download():
                     downloaded[idx] = download
 
