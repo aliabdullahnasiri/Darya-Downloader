@@ -360,7 +360,6 @@ class Darya:
                             info["width"],
                             info["height"],
                             True,
-                            FileIO(self.thumbnail, "rb") if self.thumbnail else None,
                         )
                     )
 
