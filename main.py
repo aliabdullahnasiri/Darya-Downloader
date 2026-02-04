@@ -1,8 +1,30 @@
-from typing import Literal
+import re
+from typing import Literal, Optional
 
 import click
 
 from darya import Darya
+
+SLICE_RE = re.compile(r"^(\d*)?:(\d*)?(?::(\d+))?$")
+
+
+class SliceType(click.ParamType):
+    name = "slice"
+
+    def convert(self, value, param, ctx):
+        if not SLICE_RE.match(value):
+            self.fail(
+                f"{value!r} is not a valid slice (start:stop[:step])",
+                param,
+                ctx,
+            )
+
+        start, stop, step = (value + "::").split(":")[:3]
+
+        def to_int(x):
+            return int(x) if x else None
+
+        return slice(to_int(start), to_int(stop), to_int(step))
 
 
 @click.group()
@@ -29,6 +51,12 @@ def main() -> None: ...
     default="128k",
     help="Specify the audio bitrate representation to download (e.g., 128k).",
 )
+@click.option(
+    "--range",
+    "range_",
+    type=SliceType(),
+    help="Python slice like 1:10:2",
+)
 @click.option("--threads", type=int, default=10)
 @click.option("--verbose", is_flag=True, default=False)
 def download(
@@ -40,12 +68,13 @@ def download(
         "426x240",
     ] = "1920x1080",
     audio: Literal["128k", "256k", "320k"] = "128k",
+    range_: Optional[slice] = None,
     threads: int = 10,
     verbose: bool = False,
 ) -> None:
     Darya.banner()
 
-    darya: Darya = Darya(item_id, resolution, audio, threads, verbose)
+    darya: Darya = Darya(item_id, resolution, audio, range_, threads, verbose)
     darya.download()
 
 
