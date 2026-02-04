@@ -2,6 +2,7 @@ import pathlib
 from dataclasses import dataclass, field
 from typing import Optional
 
+from FastTelethonhelper import fast_upload
 from telethon import TelegramClient
 from telethon.hints import FileLike
 from telethon.sessions import StringSession
@@ -40,7 +41,9 @@ class Telegram:
         async with self._client:
             await self._client.send_file(
                 self.channel_username,
-                f"{file_path}",
+                await fast_upload(
+                    self._client, file_path, progress_bar_function=self._progress
+                ),
                 caption=caption,
                 force_document=False,
                 supports_streaming=supports_streaming,
