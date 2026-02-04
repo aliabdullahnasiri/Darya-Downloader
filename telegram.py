@@ -42,7 +42,7 @@ class Telegram:
             await self._client.send_file(
                 self.channel_username,
                 await fast_upload(
-                    self._client, file_path, progress_bar_function=self._progress
+                    self._client, f"{file_path}", progress_bar_function=self._progress
                 ),
                 caption=caption,
                 force_document=False,
