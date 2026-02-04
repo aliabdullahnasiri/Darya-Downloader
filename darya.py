@@ -11,7 +11,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from io import FileIO
 from os.path import basename
-from typing import Dict, List, Literal, Self, Union
+from typing import Dict, List, Literal, Optional, Self, Union
 from urllib.parse import urlparse
 
 import pyfiglet
@@ -35,6 +35,7 @@ class Darya:
     item_identity: str
     resolution: Literal["1920x1080", "1280x720", "854x480", "426x240"] = "1920x1080"
     audio: Literal["128k", "256k", "320k"] = "128k"
+    range_: Optional[slice] = None
     threads: int = 10
     verbose: bool = False
     output: Union[pathlib.Path, None] = None
@@ -209,6 +210,7 @@ class Darya:
 
         if type(item) is dict:
             id = item["id"]
+
             mid = item["mediaID"]
             mpds = self.download_mpds(id, item["media"]["mpds"])
             title = item["title"]["en"]
@@ -325,10 +327,17 @@ class Darya:
         elif type(item) is list:
             downloaded: Dict[int, pathlib.Path] = {}
 
-            for idx, item in enumerate(copy.deepcopy(item)):
+            items = list(enumerate(copy.deepcopy(item)))
+
+            if self.range_:
+                items = items[self.range_]
+
+            for idx, item in items:
                 id = item["id"]
                 logger.info(f"Downloading <b>{id!r} ({idx+1})</b>...")
-                darya: Darya = Darya(id, self.resolution, self.audio, self.threads)
+                darya: Darya = Darya(
+                    id, self.resolution, self.audio, self.range_, self.threads
+                )
                 if download := darya.download():
                     downloaded[idx] = download
         else:
