@@ -1,15 +1,61 @@
+import asyncio
+import os
 import pathlib
 from dataclasses import dataclass, field
 from typing import Optional
 
 from FastTelethonhelper import fast_upload
-from telethon import TelegramClient
+from telethon import TelegramClient, functions, utils
 from telethon.hints import FileLike
 from telethon.sessions import StringSession
 from telethon.tl.types import DocumentAttributeVideo
 
-from env import Env
 from logger import logger
+
+
+async def fast_upload_with_progress(client, file_path, callback=None):
+    file_size = os.path.getsize(file_path)
+    # Determine chunk size (must be a multiple of 1KB)
+    chunk_size = 512 * 1024  # 512KB
+    total_chunks = (file_size + chunk_size - 1) // chunk_size
+
+    # Use a unique ID for the file
+    file_id = utils.generate_random_long()
+
+    with open(file_path, "rb") as f:
+        uploaded_bytes = 0
+
+        async def upload_chunk(i):
+            nonlocal uploaded_bytes
+            f.seek(i * chunk_size)
+            chunk = f.read(chunk_size)
+
+            # This is the raw Telethon internal method for speed
+            await client(
+                functions.upload.SaveBigFilePartRequest(
+                    file_id=file_id,
+                    file_part=i,
+                    file_total_parts=total_chunks,
+                    bytes=chunk,
+                )
+            )
+
+            uploaded_bytes += len(chunk)
+            if callback:
+                # Mirroring the standard Telethon callback (current, total)
+                await callback(uploaded_bytes, file_size)
+
+        # Semaphore limits parallel tasks to prevent FloodWait
+        semaphore = asyncio.Semaphore(16)
+
+        async def sem_task(i):
+            async with semaphore:
+                return await upload_chunk(i)
+
+        tasks = [sem_task(i) for i in range(total_chunks)]
+        await asyncio.gather(*tasks)
+
+    return InputFile(file_id, total_chunks, os.path.basename(file_path), "")
 
 
 @dataclass
@@ -37,7 +83,6 @@ class Telegram:
         supports_streaming: bool = True,
         thumb: Optional[FileLike] = None,
     ) -> None:
-
         async with self._client:
             await self._client.send_file(
                 self.channel_username,
