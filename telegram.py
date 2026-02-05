@@ -39,31 +39,6 @@ class Telegram:
         supports_streaming: bool = True,
         thumb: Optional[FileLike] = None,
     ) -> None:
-        async with self._client:
-            await self._client.send_file(
-                self.channel_username,
-                await self.fast_upload_with_progress(f"{file_path}", self._progress),
-                caption=caption,
-                force_document=False,
-                supports_streaming=supports_streaming,
-                attributes=[
-                    DocumentAttributeVideo(
-                        duration=duration,
-                        w=width,
-                        h=height,
-                        supports_streaming=supports_streaming,
-                    )
-                ],
-                thumb=thumb,
-                progress_callback=self._progress,
-            )
-            logger.success("Upload complete!")
-
-    @staticmethod
-    def _progress(current, total):
-        print(f"Uploaded: {current / total * 100:.2f}%", end="\r")
-
-    async def fast_upload_with_progress(self: Self, file_path, callback=None):
         file_size = os.path.getsize(file_path)
         # Determine chunk size (must be a multiple of 1KB)
         chunk_size = 512 * 1024  # 512KB
@@ -91,9 +66,7 @@ class Telegram:
                 )
 
                 uploaded_bytes += len(chunk)
-                if callback:
-                    # Mirroring the standard Telethon callback (current, total)
-                    await callback(uploaded_bytes, file_size)
+                self._progress(uploaded_bytes, file_size)
 
             # Semaphore limits parallel tasks to prevent FloodWait
             semaphore = asyncio.Semaphore(16)
@@ -105,4 +78,28 @@ class Telegram:
             tasks = [sem_task(i) for i in range(total_chunks)]
             await asyncio.gather(*tasks)
 
-        return InputFile(file_id, total_chunks, os.path.basename(file_path), "")
+        file = InputFile(file_id, total_chunks, os.path.basename(file_path), "")
+
+        async with self._client:
+            await self._client.send_file(
+                self.channel_username,
+                file,
+                caption=caption,
+                force_document=False,
+                supports_streaming=supports_streaming,
+                attributes=[
+                    DocumentAttributeVideo(
+                        duration=duration,
+                        w=width,
+                        h=height,
+                        supports_streaming=supports_streaming,
+                    )
+                ],
+                thumb=thumb,
+                progress_callback=self._progress,
+            )
+            logger.success("Upload complete!")
+
+    @staticmethod
+    def _progress(current, total):
+        print(f"Uploaded: {current / total * 100:.2f}%", end="\r")
