@@ -216,6 +216,8 @@ class Darya:
             mpds = self.download_mpds(id, item["media"]["mpds"])
             title = item["title"]["en"]
 
+            logger.info(f"Downloading <b>{title!r} ({id})</b>...")
+
             output = pathlib.Path(
                 f"{self.ITEM_OUTPUT_DIR}/{secure_filename(title)}.mp4"
             )
