@@ -1,6 +1,7 @@
 import asyncio
 import os
 import pathlib
+import secrets
 from dataclasses import dataclass, field
 from typing import Optional, Self
 
@@ -69,7 +70,7 @@ class Telegram:
         total_chunks = (file_size + chunk_size - 1) // chunk_size
 
         # Use a unique ID for the file
-        file_id = utils.generate_random_long()
+        file_id = secrets.randbits(63)
 
         with open(file_path, "rb") as f:
             uploaded_bytes = 0
