@@ -44,6 +44,7 @@ class Telegram:
             # Determine chunk size (must be a multiple of 1KB)
             chunk_size = 512 * 1024  # 512KB
             total_chunks = (file_size + chunk_size - 1) // chunk_size
+            is_big = file_size > 10 * 1024 * 1024
 
             # Use a unique ID for the file
             file_id = secrets.randbits(63)
@@ -70,7 +71,7 @@ class Telegram:
                     self._progress(uploaded_bytes, file_size)
 
                 # Semaphore limits parallel tasks to prevent FloodWait
-                semaphore = asyncio.Semaphore(64)
+                semaphore = asyncio.Semaphore(512)
 
                 async def sem_task(i):
                     async with semaphore:
@@ -79,8 +80,17 @@ class Telegram:
                 tasks = [sem_task(i) for i in range(total_chunks)]
                 await asyncio.gather(*tasks)
 
-            file = InputFileBig(
-                id=file_id, parts=total_chunks, name=os.path.basename(file_path)
+            file = (
+                InputFileBig(
+                    id=file_id, parts=total_chunks, name=os.path.basename(file_path)
+                )
+                if is_big
+                else InputFile(
+                    id=file_id,
+                    parts=total_chunks,
+                    name=os.path.basename(file_path),
+                    md5_checksum="",
+                )
             )
 
             await self._client.send_file(
