@@ -3,10 +3,9 @@ import os
 import pathlib
 import secrets
 from dataclasses import dataclass, field
-from typing import Optional, Self
+from typing import Optional
 
-from FastTelethonhelper import fast_upload
-from telethon import TelegramClient, functions, utils
+from telethon import TelegramClient, functions
 from telethon.hints import FileLike
 from telethon.sessions import StringSession
 from telethon.tl.types import DocumentAttributeVideo, InputFile, InputFileBig
