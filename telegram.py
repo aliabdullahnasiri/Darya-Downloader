@@ -70,7 +70,7 @@ class Telegram:
                     self._progress(uploaded_bytes, file_size)
 
                 # Semaphore limits parallel tasks to prevent FloodWait
-                semaphore = asyncio.Semaphore(32)
+                semaphore = asyncio.Semaphore(64)
 
                 async def sem_task(i):
                     async with semaphore:
