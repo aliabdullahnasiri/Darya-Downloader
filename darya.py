@@ -5,6 +5,7 @@ import os
 import pathlib
 import random
 import re
+import shutil
 import subprocess
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -369,6 +370,8 @@ class Darya:
                             thumb=info["thumb"],
                         )
                     )
+
+                    shutil.rmtree(self.ITEM_DIRECTORY, ignore_errors=True)
 
         except Exception as err:
             print(f"ERROR: {err}")
