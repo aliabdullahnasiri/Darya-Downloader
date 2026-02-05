@@ -9,7 +9,7 @@ from FastTelethonhelper import fast_upload
 from telethon import TelegramClient, functions, utils
 from telethon.hints import FileLike
 from telethon.sessions import StringSession
-from telethon.tl.types import DocumentAttributeVideo, InputFile
+from telethon.tl.types import DocumentAttributeVideo, InputFile, InputFileBig
 
 from logger import logger
 
@@ -79,7 +79,9 @@ class Telegram:
                 tasks = [sem_task(i) for i in range(total_chunks)]
                 await asyncio.gather(*tasks)
 
-            file = InputFile(file_id, total_chunks, os.path.basename(file_path), "")
+            file = InputFileBig(
+                id=file_id, parts=total_chunks, name=os.path.basename(file_path)
+            )
 
             await self._client.send_file(
                 self.channel_username,
