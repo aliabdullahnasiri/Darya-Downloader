@@ -41,9 +41,7 @@ class Telegram:
         async with self._client:
             await self._client.send_file(
                 self.channel_username,
-                await fast_upload(
-                    self._client, f"{file_path}", progress_bar_function=self._progress
-                ),
+                await self.fast_upload_with_progress(f"{file_path}", self._progress),
                 caption=caption,
                 force_document=False,
                 supports_streaming=supports_streaming,
