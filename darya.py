@@ -356,7 +356,7 @@ class Darya:
         else:
             logger.error(f"Failed to find item with ID: {self.item_identity!r}.")
 
-    def send_video(self: Self, file_path: pathlib.Path, timeout: int = 5) -> None:
+    def send_video(self: Self, file_path: pathlib.Path, timeout: int = 10) -> None:
         if not (
             Env.API_ID and Env.API_HASH and Env.SESSION_STRING and Env.CHANNEL_USERNAME
         ):
