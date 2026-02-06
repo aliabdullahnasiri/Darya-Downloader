@@ -7,6 +7,7 @@ import random
 import re
 import shutil
 import subprocess
+import time
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
@@ -441,6 +442,7 @@ class Darya:
         cookies=None,
         data=None,
         device="default",
+        timeout: int = 5,
     ):
         response: requests.Response = requests.post(
             "https://cdrm-project.com/api/decrypt",
@@ -458,9 +460,22 @@ class Darya:
             headers={"Content-Type": "application/json"},
         )
 
-        dct = response.json()
+        try:
+            dct = response.json()
 
-        return dct["message"]
+            return dct["message"]
+        except json.JSONDecodeError as err:
+            console.print(f"ERROR: {err}")
+
+        time.sleep(5)
+
+        return (
+            self.decrypt(
+                pssh, licurl, proxy, headers, cookies, data, device, timeout - 1
+            )
+            if timeout > 0
+            else None
+        )
 
     @staticmethod
     def banner() -> None:
