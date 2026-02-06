@@ -389,7 +389,7 @@ class Darya:
             print(f"ERROR: {err}")
 
             if timeout > 0:
-                time.sleep(5)
+                time.sleep(15)
                 return self.send_video(file_path, timeout - 1)
 
     def decrypt_video(self: Self, key, input_file, output_file):
