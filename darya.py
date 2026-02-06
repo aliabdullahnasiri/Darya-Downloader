@@ -224,6 +224,7 @@ class Darya:
             )
 
             if output.exists():
+                self.send_video(output)
                 return output
 
             self.thumbnail = self.download_thumbnail(item["thumbnail"])
@@ -313,6 +314,8 @@ class Darya:
                             if output.exists():
                                 logger.success(f"Successfully merged into '{output}'.")
 
+                                self.send_video(output)
+
                                 return output
                             else:
                                 logger.error(
@@ -346,7 +349,6 @@ class Darya:
                     )
                     if download := darya.download():
                         downloaded[idx] = download
-                        self.send_video(download)
 
                         idx += 1
                 except Exception as error:
