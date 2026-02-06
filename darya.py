@@ -331,19 +331,26 @@ class Darya:
         elif type(item) is list:
             downloaded: Dict[int, pathlib.Path] = {}
 
-            items = list(enumerate(copy.deepcopy(item)))
+            items = copy.deepcopy(item)
 
             if self.range_:
                 items = items[self.range_]
 
-            for idx, item in items:
-                id = item["id"]
-                logger.info(f"Downloading <b>{id!r} ({idx+1})</b>...")
-                darya: Darya = Darya(
-                    id, self.resolution, self.audio, self.range_, self.threads
-                )
-                if download := darya.download():
-                    downloaded[idx] = download
+            idx: int = 0
+
+            while idx < len(items):
+                try:
+                    item = items[idx]
+                    id = item["id"]
+                    logger.info(f"Downloading <b>{id!r} ({idx+1})</b>...")
+                    darya: Darya = Darya(
+                        id, self.resolution, self.audio, self.range_, self.threads
+                    )
+                    if download := darya.download():
+                        downloaded[idx] = download
+                        idx += 1
+                except Exception as error:
+                    console.print(f"ERROR: {error}")
         else:
             logger.error(f"Failed to find item with ID: {self.item_identity!r}.")
 
