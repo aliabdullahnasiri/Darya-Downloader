@@ -356,7 +356,7 @@ class Darya:
         else:
             logger.error(f"Failed to find item with ID: {self.item_identity!r}.")
 
-    def send_video(self: Self, file_path: pathlib.Path) -> None:
+    def send_video(self: Self, file_path: pathlib.Path, timeout: int = 5) -> None:
         if not (
             Env.API_ID and Env.API_HASH and Env.SESSION_STRING and Env.CHANNEL_USERNAME
         ):
@@ -387,6 +387,10 @@ class Darya:
 
         except Exception as err:
             print(f"ERROR: {err}")
+
+            if timeout > 0:
+                time.sleep(5)
+                return self.send_video(file_path, timeout - 1)
 
     def decrypt_video(self: Self, key, input_file, output_file):
         command = ["mp4decrypt", "--key", f"{key}", input_file, output_file]
