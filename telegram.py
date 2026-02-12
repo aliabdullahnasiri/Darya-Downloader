@@ -41,7 +41,7 @@ class Telegram:
         async with self._client:
             file_size = os.path.getsize(file_path)
             # Determine chunk size (must be a multiple of 1KB)
-            chunk_size = 512 * 1024 * 2  # 512KB
+            chunk_size = 512 * 1024  # 512KB
             total_chunks = (file_size + chunk_size - 1) // chunk_size
             is_big = file_size > 10 * 1024 * 1024
 
