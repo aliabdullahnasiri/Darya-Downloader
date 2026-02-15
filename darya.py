@@ -11,7 +11,6 @@ import time
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
-from io import FileIO
 from os.path import basename
 from typing import Dict, List, Literal, Optional, Self, Union
 from urllib.parse import urlparse
