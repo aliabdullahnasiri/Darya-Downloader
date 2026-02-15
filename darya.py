@@ -10,7 +10,7 @@ import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from os.path import basename
-from typing import Dict, List, Literal, Optional, Self, Union
+from typing import Callable, Dict, List, Literal, Optional, Self, Union
 from urllib.parse import urlparse
 
 import pyfiglet
@@ -202,7 +202,9 @@ class Darya:
                 with open(value, "rb") as ff:
                     f.write(ff.read())
 
-    def download(self: Self) -> Union[pathlib.Path, None]:
+    def download(
+        self: Self, callback: Optional[Callable] = None
+    ) -> Union[pathlib.Path, None]:
         item = self.item
 
         if type(item) is dict:
@@ -219,6 +221,9 @@ class Darya:
             )
 
             if output.exists():
+                if callback is not None:
+                    callback(output)
+
                 return output
 
             self.thumbnail = self.download_thumbnail(item["thumbnail"])
@@ -307,6 +312,9 @@ class Darya:
 
                             if output.exists():
                                 logger.success(f"Successfully merged into '{output}'.")
+
+                                if callback is not None:
+                                    callback(output)
 
                                 return output
                             else:
