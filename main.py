@@ -3,6 +3,7 @@ from typing import Literal, Optional
 
 import click
 
+from console import console
 from darya import Darya
 
 SLICE_RE = re.compile(r"^(\d*)?:(\d*)?(?::(\d+))?$")
@@ -75,7 +76,7 @@ def download(
     Darya.banner()
 
     darya: Darya = Darya(item_id, resolution, audio, range_, threads, verbose)
-    darya.download()
+    darya.download(callback=lambda output: console.print(output))
 
 
 if __name__ == "__main__":
