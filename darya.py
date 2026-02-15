@@ -1,17 +1,14 @@
-import asyncio
 import copy
 import json
 import os
 import pathlib
 import random
 import re
-import shutil
 import subprocess
 import time
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
-from io import FileIO
 from os.path import basename
 from typing import Dict, List, Literal, Optional, Self, Union
 from urllib.parse import urlparse
@@ -22,12 +19,10 @@ from rich.traceback import install
 from werkzeug.utils import secure_filename
 
 from console import console
-from env import Env
 from functions import audio_bitrate2representation as ab2r
-from functions import download_file, get_video_info
+from functions import download_file
 from functions import resolution2representation as r2r
 from logger import logger
-from telegram import Telegram
 
 install()
 
@@ -224,7 +219,6 @@ class Darya:
             )
 
             if output.exists():
-                self.send_video(output)
                 return output
 
             self.thumbnail = self.download_thumbnail(item["thumbnail"])
@@ -314,8 +308,6 @@ class Darya:
                             if output.exists():
                                 logger.success(f"Successfully merged into '{output}'.")
 
-                                self.send_video(output)
-
                                 return output
                             else:
                                 logger.error(
@@ -355,42 +347,6 @@ class Darya:
                     console.print(f"ERROR: {error}")
         else:
             logger.error(f"Failed to find item with ID: {self.item_identity!r}.")
-
-    def send_video(self: Self, file_path: pathlib.Path, timeout: int = 10) -> None:
-        if not (
-            Env.API_ID and Env.API_HASH and Env.SESSION_STRING and Env.CHANNEL_USERNAME
-        ):
-            return
-
-        try:
-            tg = Telegram(
-                api_id=Env.API_ID,
-                api_hash=Env.API_HASH,
-                session_str=Env.SESSION_STRING,
-                channel_username=Env.CHANNEL_USERNAME,
-            )
-
-            if file_path.exists() and type(self.item) is dict:
-                if info := get_video_info(file_path):
-                    asyncio.run(
-                        tg.upload_video(
-                            file_path,
-                            self.item["title"]["en"],
-                            info["duration"],
-                            info["width"],
-                            info["height"],
-                            thumb=info["thumb"],
-                        )
-                    )
-
-                    shutil.rmtree(self.ITEM_DIRECTORY, ignore_errors=True)
-
-        except Exception as err:
-            print(f"ERROR: {err}")
-
-            if timeout > 0:
-                time.sleep(15)
-                return self.send_video(file_path, timeout - 1)
 
     def decrypt_video(self: Self, key, input_file, output_file):
         command = ["mp4decrypt", "--key", f"{key}", input_file, output_file]
