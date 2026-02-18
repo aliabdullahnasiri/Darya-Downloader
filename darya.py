@@ -15,6 +15,14 @@ from urllib.parse import urlparse
 
 import pyfiglet
 import requests
+from rich.progress import (
+    BarColumn,
+    DownloadColumn,
+    Progress,
+    TextColumn,
+    TimeRemainingColumn,
+    TransferSpeedColumn,
+)
 from rich.traceback import install
 from werkzeug.utils import secure_filename
 
@@ -256,32 +264,69 @@ class Darya:
 
                             if filename and path:
                                 with open(ff := f"{path}/.{filename}", "wb") as f:
-                                    if i := download_file(
-                                        init,
-                                        pathlib.Path(f"{path}/{basename(init)}"),
-                                        self.verbose,
-                                    ):
-                                        f.write(open(i, "rb").read())
+                                    total_files = len(segments)
+                                    start_time = time.time()
 
-                                    with ThreadPoolExecutor(
-                                        max_workers=self.threads
-                                    ) as executor:
-                                        futures = [
-                                            executor.submit(
-                                                self.download_segment,
-                                                idx,
-                                                segment,
-                                                path,
-                                            )
-                                            for idx, segment in enumerate(segments[:])
-                                        ]
+                                    with Progress(
+                                        TextColumn(
+                                            "[bold green]Downloading[/bold green]"
+                                        ),
+                                        BarColumn(),
+                                        TextColumn(
+                                            "[bold cyan]{task.completed}/{task.total}[/bold cyan] files"
+                                        ),
+                                        TextColumn("•"),
+                                        TextColumn(
+                                            "[yellow]{task.fields[speed]}[/yellow]"
+                                        ),
+                                        TextColumn("•"),
+                                        TimeRemainingColumn(),
+                                    ) as p:
+                                        task = p.add_task(
+                                            "Downloading...",
+                                            total=total_files,
+                                            speed="0 files/s",
+                                        )
+                                        if i := download_file(
+                                            init,
+                                            pathlib.Path(f"{path}/{basename(init)}"),
+                                            self.verbose,
+                                        ):
+                                            f.write(open(i, "rb").read())
 
-                                        for future in as_completed(futures):
-                                            idx, file_path = future.result()
-                                            if file_path:
-                                                self.downloaded[idx] = file_path
+                                        with ThreadPoolExecutor(
+                                            max_workers=self.threads
+                                        ) as executor:
+                                            futures = [
+                                                executor.submit(
+                                                    self.download_segment,
+                                                    idx,
+                                                    segment,
+                                                    path,
+                                                )
+                                                for idx, segment in enumerate(
+                                                    segments[:]
+                                                )
+                                            ]
 
-                                    self.combine(f)
+                                            for future in as_completed(futures):
+                                                idx, file_path = future.result()
+                                                if file_path:
+                                                    self.downloaded[idx] = file_path
+                                                    elapsed = time.time() - start_time
+                                                    speed = (
+                                                        p.tasks[0].completed / elapsed
+                                                        if elapsed > 0
+                                                        else 0
+                                                    )
+
+                                                    p.update(
+                                                        task,
+                                                        advance=1,
+                                                        speed=f"{speed:.2f} files/s",
+                                                    )
+
+                                        self.combine(f)
 
                                 self.decrypt_video(key, ff, f"{path}/{filename}")
 
