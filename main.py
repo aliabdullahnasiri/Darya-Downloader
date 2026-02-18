@@ -6,7 +6,7 @@ import click
 from console import console
 from darya import Darya
 
-SLICE_RE = re.compile(r"^(\d*)?:(\d*)?(?::(\d+))?$")
+SLICE_RE = re.compile(r"^(-?\d*)?:(-?\d*)?(?::(-?\d+))?$")
 
 
 class SliceType(click.ParamType):
