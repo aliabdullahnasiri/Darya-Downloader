@@ -127,8 +127,8 @@ def download_file(
                 os.remove(output)
             return download_file(url, output, verbose, retries - 1)
 
-    except Exception as e:
-        logger.error("Error:", e)
+    except Exception:
+        pass
 
 
 def resolution2representation(
