@@ -15,14 +15,7 @@ from urllib.parse import urlparse
 
 import pyfiglet
 import requests
-from rich.progress import (
-    BarColumn,
-    DownloadColumn,
-    Progress,
-    TextColumn,
-    TimeRemainingColumn,
-    TransferSpeedColumn,
-)
+from rich.progress import BarColumn, Progress, TextColumn, TimeRemainingColumn
 from rich.traceback import install
 from werkzeug.utils import secure_filename
 
