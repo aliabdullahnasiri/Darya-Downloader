@@ -1,4 +1,5 @@
 import io
+import os
 import pathlib
 from pathlib import Path
 from typing import Literal, Union
@@ -90,31 +91,44 @@ def choose_mpd_file(directory: str = "downloads/mpds") -> Union[Path, None]:
 
 
 def download_file(
-    url: str, output: pathlib.Path, verbose: bool = False
+    url: str, output: pathlib.Path, verbose: bool = False, retries: int = 5
 ) -> Union[pathlib.Path, None]:
     """Download a file from the given URL and save it to the output path."""
-    if output.exists():
-        return output
+    try:
+        if output.exists():
+            return output
 
-    response = requests.get(url, stream=True)
+        response = requests.get(url, stream=True)
 
-    if size := response.headers.get("content-length"):
-        size = float(size)
+        if size := response.headers.get("content-length"):
+            size = float(size)
 
-    if response.status_code == 200:
-        with open(output, "wb") as file:
-            for chunk in response.iter_content(chunk_size=1024):
-                file.write(chunk)
+        if response.status_code == 200:
+            with open(output, "wb") as file:
+                for chunk in response.iter_content(chunk_size=1024):
+                    file.write(chunk)
 
-        if verbose:
-            if size:
-                logger.info(f"Downloaded: <b>{output}</b> (<c>{format_size(size)}</c>)")
-            else:
-                logger.info(f"Downloaded: <b>{output}</b>")
+            if verbose:
+                if size:
+                    logger.info(
+                        f"Downloaded: <b>{output}</b> (<c>{format_size(size)}</c>)"
+                    )
+                else:
+                    logger.info(f"Downloaded: <b>{output}</b>")
 
-        return pathlib.Path(output)
-    else:
-        logger.error(f"Failed to download: {url} (Status: {response.status_code})")
+            return pathlib.Path(output)
+        else:
+            logger.error(f"Failed to download: {url} (Status: {response.status_code})")
+    except requests.exceptions.ChunkedEncodingError:
+        logger.warning("⚠ Connection interrupted. Run again to resume automatically.")
+
+        if retries > 0:
+            if output.exists():
+                os.remove(output)
+            return download_file(url, output, verbose, retries - 1)
+
+    except Exception as e:
+        logger.error("Error:", e)
 
 
 def resolution2representation(
