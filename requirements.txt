@@ -8,3 +8,4 @@ telethon
 ffmpeg-python
 FastTelethonhelper
 cryptg
+azure-ai-inference
