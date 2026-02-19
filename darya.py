@@ -21,7 +21,7 @@ from werkzeug.utils import secure_filename
 
 from console import console
 from functions import audio_bitrate2representation as ab2r
-from functions import download_file
+from functions import download_file, get_video_info
 from functions import resolution2representation as r2r
 from logger import logger
 
@@ -36,7 +36,6 @@ class Darya:
     range_: Optional[slice] = None
     threads: int = 10
     verbose: bool = False
-    output: Union[pathlib.Path, None] = None
 
     def __post_init__(self: Self) -> None:
         self.DOWNLOAD_DIR: str = "downloads"
@@ -51,6 +50,7 @@ class Darya:
 
         self.thumbnail: Union[None, pathlib.Path] = None
         self.background: Union[None, pathlib.Path] = None
+        self.media: Union[None, Dict] = None
 
         os.makedirs(self.DOWNLOAD_DIR, exist_ok=True)
 
@@ -86,6 +86,19 @@ class Darya:
             )
 
             return item
+
+    @property
+    def output(self) -> Union[pathlib.Path, None]:
+        if hasattr(self, "_output"):
+            return self._output
+
+        return None
+
+    @output.setter
+    def output(self, value: pathlib.Path):
+        if value.exists():
+            self._output = value
+            self.media = get_video_info(value)
 
     def get_representations(
         self: Self,
@@ -222,8 +235,9 @@ class Darya:
             )
 
             if output.exists():
+                self.output = output
                 if callback is not None:
-                    callback(output)
+                    callback(self)
 
                 return output
 
@@ -349,10 +363,11 @@ class Darya:
                             )
 
                             if output.exists():
+                                self.output = output
                                 logger.success(f"Successfully merged into '{output}'.")
 
                                 if callback is not None:
-                                    callback(output)
+                                    callback(self)
 
                                 return output
                             else:
@@ -385,7 +400,7 @@ class Darya:
                     darya: Darya = Darya(
                         id, self.resolution, self.audio, self.range_, self.threads
                     )
-                    if download := darya.download():
+                    if download := darya.download(callback=callback):
                         downloaded[idx] = download
 
                         idx += 1
