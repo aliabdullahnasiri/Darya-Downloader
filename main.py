@@ -1,4 +1,3 @@
-import pathlib
 import re
 from typing import Literal, Optional
 
@@ -36,6 +35,7 @@ def send_to_telegram_callback(obj: Darya) -> None:
 
 def send_to_youtube_callback(obj: Darya) -> None:
     console.print("Send to Youtube!!!", obj)
+    console.print(obj.media)
 
 
 @click.group()
@@ -87,6 +87,8 @@ def download(
     send_to_telegram: bool = False,
     send_to_youtube: bool = False,
 ) -> None:
+    install_bento4()
+
     Darya.banner()
 
     darya: Darya = Darya(item_id, resolution, audio, range_, threads, verbose)
