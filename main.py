@@ -122,7 +122,6 @@ def download(
 
     callback = None
 
-    print(send_to_youtube, send_to_telegram)
     if send_to_telegram:
         callback = send_to_telegram_callback
     elif send_to_youtube:
