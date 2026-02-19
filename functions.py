@@ -9,6 +9,7 @@ import requests
 from rich.prompt import Prompt
 
 from console import console
+from llama_client import LlamaChatClient
 from logger import logger
 
 
@@ -255,3 +256,15 @@ def format_size(size: float) -> str:
         index += 1
 
     return f"{size:.2f} {units[index]}"
+
+
+def write_description_4_tg_channel(cid: str, title: str) -> str:
+    with open("prompt.txt", "rt") as f:
+        txt = f.read()
+        chat_client = LlamaChatClient(
+            endpoint="https://models.github.ai/inference",
+            model="meta/Llama-4-Scout-17B-16E-Instruct",
+        )
+
+        reply = chat_client.chat(txt.format(title, cid))
+        return reply
