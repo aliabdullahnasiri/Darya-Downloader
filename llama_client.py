@@ -55,11 +55,15 @@ class LlamaChatClient:
         return response.choices[0].message.content
 
 
-if __name__ == "__main__":
+def main() -> None:
     chat_client = LlamaChatClient(
         endpoint="https://models.github.ai/inference",
         model="meta/Llama-4-Scout-17B-16E-Instruct",
     )
 
-    reply = chat_client.chat("What is the difference between stack and heap?")
+    reply = chat_client.chat("Hello!")
     print(reply)
+
+
+if __name__ == "__main__":
+    main()
