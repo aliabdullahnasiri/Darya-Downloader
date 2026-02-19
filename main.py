@@ -1,3 +1,4 @@
+import pathlib
 import re
 from typing import Literal, Optional
 
@@ -26,6 +27,15 @@ class SliceType(click.ParamType):
             return int(x) if x else None
 
         return slice(to_int(start), to_int(stop), to_int(step))
+
+
+def send_to_telegram_callback(obj: Darya) -> None:
+    console.print("Send to Telegram!!!", obj)
+    console.print(obj.media)
+
+
+def send_to_youtube_callback(obj: Darya) -> None:
+    console.print("Send to Youtube!!!", obj)
 
 
 @click.group()
@@ -60,6 +70,8 @@ def main() -> None: ...
 )
 @click.option("--threads", type=int, default=10)
 @click.option("--verbose", is_flag=True, default=False)
+@click.option("--send-to-telegram", is_flag=True, default=False)
+@click.option("--send-to-youtube", is_flag=True, default=False)
 def download(
     item_id: str,
     resolution: Literal[
@@ -72,11 +84,27 @@ def download(
     range_: Optional[slice] = None,
     threads: int = 10,
     verbose: bool = False,
+    send_to_telegram: bool = False,
+    send_to_youtube: bool = False,
 ) -> None:
     Darya.banner()
 
     darya: Darya = Darya(item_id, resolution, audio, range_, threads, verbose)
-    darya.download(callback=lambda output: console.print(output))
+
+    callback = None
+
+    if send_to_telegram:
+        callback = send_to_telegram_callback
+    elif send_to_youtube:
+        callback = send_to_youtube_callback
+
+    darya.download(
+        callback=lambda obj: (
+            callback(obj)
+            if callback is not None
+            else console.print(obj) if verbose else None
+        )
+    )
 
 
 if __name__ == "__main__":
