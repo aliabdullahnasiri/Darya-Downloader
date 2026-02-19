@@ -35,10 +35,10 @@ class SliceType(click.ParamType):
 def send_to_telegram_callback(obj: Darya) -> None:
     try:
         tg = Telegram(
-            api_id=Env.API_ID,
-            api_hash=Env.API_HASH,
-            session_str=Env.SESSION_STRING,
-            channel_username=Env.CHANNEL_USERNAME,
+            api_id=Env.TG_API_ID,
+            api_hash=Env.TG_API_HASH,
+            session_str=Env.TG_SESSION_STRING,
+            channel_username=Env.TG_CHANNEL_USERNAME,
         )
 
         if (
