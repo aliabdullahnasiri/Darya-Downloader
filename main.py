@@ -1,3 +1,4 @@
+import asyncio
 import re
 from typing import Literal, Optional
 
@@ -5,6 +6,9 @@ import click
 
 from console import console
 from darya import Darya
+from env import Env
+from functions import get_video_info
+from telegram import Telegram
 
 SLICE_RE = re.compile(r"^(-?\d*)?:(-?\d*)?(?::(-?\d+))?$")
 
@@ -29,8 +33,33 @@ class SliceType(click.ParamType):
 
 
 def send_to_telegram_callback(obj: Darya) -> None:
-    console.print("Send to Telegram!!!", obj)
-    console.print(obj.media)
+    try:
+        tg = Telegram(
+            api_id=Env.API_ID,
+            api_hash=Env.API_HASH,
+            session_str=Env.SESSION_STRING,
+            channel_username=Env.CHANNEL_USERNAME,
+        )
+
+        if (
+            obj.output
+            and type(obj.item) is dict
+            and (info := get_video_info(obj.output))
+        ):
+            asyncio.run(
+                tg.upload_video(
+                    obj.output,
+                    obj.item["title"]["en"],
+                    info["duration"],
+                    info["width"],
+                    info["height"],
+                    thumb=info["thumb"],
+                    supports_streaming=True,
+                )
+            )
+
+    except AttributeError as err:
+        console.print("ERROR: ", err)
 
 
 def send_to_youtube_callback(obj: Darya) -> None:
