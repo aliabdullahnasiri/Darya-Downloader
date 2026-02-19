@@ -87,8 +87,6 @@ def download(
     send_to_telegram: bool = False,
     send_to_youtube: bool = False,
 ) -> None:
-    install_bento4()
-
     Darya.banner()
 
     darya: Darya = Darya(item_id, resolution, audio, range_, threads, verbose)
