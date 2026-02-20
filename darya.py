@@ -4,6 +4,7 @@ import os
 import pathlib
 import random
 import re
+import shutil
 import subprocess
 import time
 import xml.etree.ElementTree as ET
@@ -99,6 +100,10 @@ class Darya:
         if value.exists():
             self._output = value
             self.media = get_video_info(value)
+
+    def delete(self: Self) -> None:
+        logger.info("Deleting...")
+        shutil.rmtree(self.ITEM_DIRECTORY)
 
     def get_representations(
         self: Self,
