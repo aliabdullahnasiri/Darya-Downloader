@@ -58,6 +58,9 @@ def send_to_telegram_callback(obj: Darya) -> None:
                 )
             )
 
+            if hasattr(obj, "delete"):
+                obj.delete()
+
     except AttributeError as err:
         console.print("ERROR: ", err)
 
