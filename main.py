@@ -131,7 +131,7 @@ def download(
         callback=lambda obj: (
             callback(obj)
             if callback is not None
-            else console.print(obj) if verbose else None
+            else (console.print(obj) if verbose else None)
         )
     )
 
