@@ -9,16 +9,15 @@ from telethon.hints import FileLike
 from telethon.sessions import StringSession
 from telethon.tl.types import DocumentAttributeVideo, InputFile, InputFileBig
 
-from env import Env
 from logger import logger
 
 
 @dataclass
 class Telegram:
-    api_id: int = Env.TG_API_ID
-    api_hash: str = Env.TG_API_HASH
-    session_str: str = Env.TG_SESSION_STRING
-    channel_username: str = Env.TG_CHANNEL_USERNAME
+    api_id: int
+    api_hash: str
+    session_str: str
+    channel_username: str
     _client: TelegramClient = field(init=False)
 
     def __post_init__(self) -> None:
